@@ -43,13 +43,24 @@ clean:
 run: $(TARGET)
 	@$(TARGET)
 
-translate-810: $(TARGET)
-	@$(TARGET) --extract dbi/DBI.810.ru.nro --output /tmp/DBI_810
-	@$(TARGET) --convert /tmp/DBI_810/rec6.bin --output translate/rec6.810.ru.txt --keys /tmp/DBI_810/keys_ru.txt
-	@$(TARGET) --convert translate/rec6.810.en.txt --output /tmp/DBI_810/rec6.en.bin --keys /tmp/DBI_810/keys_en.txt
-	@$(TARGET) --patch /tmp/DBI_810/rec6.en.bin --binary dbi/DBI.810.ru.nro --output /tmp/DBI_810/bin/DBI.810.en.nro --slot 6 
+CONFIG_FILE ?= config.txt
+
+LANG_FROM_CFG := $(strip $(shell awk -F= '/^[[:space:]]*lang[[:space:]]*=/{gsub(/^[ \t]+|[ \t]+$$/,"",$$2); print $$2}' $(CONFIG_FILE) 2>/dev/null))
+VER_FROM_CFG  := $(strip $(shell awk -F= '/^[[:space:]]*ver[[:space:]]*=/{gsub(/^[ \t]+|[ \t]+$$/,"",$$2); print $$2}'  $(CONFIG_FILE) 2>/dev/null))
+
+LANG    ?= $(if $(LANG_FROM_CFG),$(LANG_FROM_CFG),en)
+DBI_VER ?= $(if $(VER_FROM_CFG),$(VER_FROM_CFG),810)
+
+DBI_ORIG := dbi/DBI.$(DBI_VER).ru.nro
+TMPDIR   := /tmp/DBI_$(DBI_VER)
+
+translate: $(TARGET)
+	@$(TARGET) --extract $(DBI_ORIG) --output $(TMPDIR)
+	@$(TARGET) --convert $(TMPDIR)/rec6.bin --output translate/rec6.ru.txt --keys $(TMPDIR)/keys_ru.txt
+	@$(TARGET) --convert translate/rec6.$(LANG).txt --output $(TMPDIR)/rec$(LANG).bin --keys $(TMPDIR)/keys_$(LANG).txt
+	@$(TARGET) --patch $(TMPDIR)/rec$(LANG).bin --binary $(DBI_ORIG) --output $(TMPDIR)/bin/DBI.nro --slot 6
 
 debug: $(TARGET)
 	@valgrind $(TARGET)
 
-.PHONY: all clean
+.PHONY: all clean translate

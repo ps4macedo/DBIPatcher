@@ -1,0 +1,2 @@
+ver=810
+lang=ko
