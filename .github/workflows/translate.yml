@@ -1,0 +1,37 @@
+name: Build (translate)
+on:
+  push:
+    branches:
+      - '**'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      CONFIG_FILE: config.txt
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Install deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential zstd libzstd-dev
+      - name: Read config
+        run: |
+          LANG_VAL="$(awk -F= '/^[[:space:]]*lang[[:space:]]*=/{gsub(/^[ \t]+|[ \t]+$/,"",$2);print $2}' "$CONFIG_FILE" 2>/dev/null)"
+          VER_VAL="$(awk -F= '/^[[:space:]]*ver[[:space:]]*=/{gsub(/^[ \t]+|[ \t]+$/,"",$2);print $2}' "$CONFIG_FILE" 2>/dev/null)"
+          [ -z "$LANG_VAL" ] && LANG_VAL="en"
+          [ -z "$VER_VAL" ] && VER_VAL="810"
+          echo "LANG=$LANG_VAL" >> "$GITHUB_ENV"
+          echo "VER=$VER_VAL"   >> "$GITHUB_ENV"
+      - name: Build & patch (make translate)
+        run: make translate
+      - name: Upload artifact (DBI.zip contains only the NRO)
+        uses: actions/upload-artifact@v4
+        with:
+          name: DBI_${{ env.LANG }}
+          path: /tmp/DBI_${{ env.VER }}/bin/DBI.nro
+          if-no-files-found: error
+          retention-days: 30
