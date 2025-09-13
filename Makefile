@@ -57,8 +57,8 @@ TMPDIR   := /tmp/DBI_$(DBI_VER)
 translate: $(TARGET)
 	@$(TARGET) --extract $(DBI_ORIG) --output $(TMPDIR)
 	@$(TARGET) --convert $(TMPDIR)/rec6.bin --output translate/rec6.ru.txt --keys $(TMPDIR)/keys_ru.txt
-	@$(TARGET) --convert translate/rec6.$(LANG).txt --output $(TMPDIR)/rec$(LANG).bin --keys $(TMPDIR)/keys_$(LANG).txt
-	@$(TARGET) --patch $(TMPDIR)/rec$(LANG).bin --binary $(DBI_ORIG) --output $(TMPDIR)/bin/DBI.nro --slot 6
+	@$(TARGET) --convert translate/rec6.$(LANG).txt --output $(TMPDIR)/rec6.$(LANG).bin --keys $(TMPDIR)/keys_$(LANG).txt
+	@$(TARGET) --patch $(TMPDIR)/rec6.$(LANG).bin --binary $(DBI_ORIG) --output $(TMPDIR)/bin/DBI.nro --slot 6
 
 debug: $(TARGET)
 	@valgrind $(TARGET)
