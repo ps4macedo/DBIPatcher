@@ -1,4 +1,12 @@
-# DBI English Translation
+# How to build?
+- Add the latest Russian version NRO file to the dbi folder as **`DBI.ver.lang.nro`**.
+- Add the target language you want to translate into as **rec6.`lang`.txt** and set `ver` and `lang` in the config.txt file.
+  - Placeholders in the original and translated strings must match.
+  - Please ensure that the total compressed size does not exceed **`14,863 bytes`**.
+    - In the Actions tab, check the build & patch (make translate) job to see the compression size of rec6.bin. (e.g. patched 11769 B/ 14863 B)
+- Check the **Actions tab** to download the output file (DBI_lang.zip).
+
+# DBI Multi-lang Translation
 
 This repository contains an English translation for the DBI homebrew application (version 810) for Nintendo Switch.
 
