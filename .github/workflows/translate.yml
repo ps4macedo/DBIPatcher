@@ -6,6 +6,7 @@ on:
   workflow_dispatch:
 permissions:
   contents: read
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -14,24 +15,82 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
       - name: Install deps
         run: |
           sudo apt-get update
           sudo apt-get install -y build-essential zstd libzstd-dev
+
       - name: Read config
         run: |
-          LANG_VAL="$(awk -F= '/^[[:space:]]*lang[[:space:]]*=/{gsub(/^[ \t]+|[ \t]+$/,"",$2);print $2}' "$CONFIG_FILE" 2>/dev/null)"
-          VER_VAL="$(awk -F= '/^[[:space:]]*ver[[:space:]]*=/{gsub(/^[ \t]+|[ \t]+$/,"",$2);print $2}' "$CONFIG_FILE" 2>/dev/null)"
+          LANG_VAL="$(awk -F= '/^[[:space:]]*lang[[:space:]]*=/{gsub(/^[ \t]+|[ \t]+$/,"",$2);print $2}' "$CONFIG_FILE" 2>/dev/null | tr -d '\r')"
+          VER_VAL="$(awk -F= '/^[[:space:]]*ver[[:space:]]*=/{gsub(/^[ \t]+|[ \t]+$/,"",$2);print $2}' "$CONFIG_FILE" 2>/dev/null | tr -d '\r')"
           [ -z "$LANG_VAL" ] && LANG_VAL="en"
           [ -z "$VER_VAL" ] && VER_VAL="810"
-          echo "LANG=$LANG_VAL" >> "$GITHUB_ENV"
-          echo "VER=$VER_VAL"   >> "$GITHUB_ENV"
-      - name: Build & patch (make translate)
-        run: make translate
+          echo "DBI_LANG=$LANG_VAL" >> "$GITHUB_ENV"
+          echo "DBI_VER=$VER_VAL"       >> "$GITHUB_ENV"
+
+      - name: Build & Translate
+        run: LANG="${DBI_LANG}" make translate
+
+      - name: Patch version
+        run: |
+          LANG_VAL="${DBI_LANG}"
+          FILE="/tmp/DBI_${DBI_VER}/bin/DBI.nro"
+
+          FALLBACK=0
+          l=$(printf '%s' "$LANG_VAL" | tr '[:upper:]' '[:lower:]')
+          case "$l" in
+            ko|kr|kor|korea|korean)                   TAG="KR" ;;
+            ja|jp|jpn|japan|japanese)                 TAG="JP" ;;
+            zhcn|zh-cn|cn|chs|zhhans|hans)            TAG="ZHCN" ;;
+            zhtw|zh-tw|tw|cht|zhhant|hant)            TAG="ZHTW" ;;
+            en|us|en-us|enus|american)                TAG="EN" ;;
+            uk|gb|engb|en-gb|british)                 TAG="ENGB" ;;
+            fr|french|france)                         TAG="FR" ;;
+            frca|fr-ca|canadianfrench)                TAG="FRCA" ;;
+            de|german|germany|deu|ger)                TAG="DE" ;;
+            it|italian|italy|ita)                     TAG="IT" ;;
+            nl|dutch|netherlands|holland|nld)         TAG="NL" ;;
+            es|spanish|spain|espanol|castellano|spa)  TAG="ES" ;;
+            es419|es-419|latamspanish)                TAG="ES419" ;;
+            pt|portuguese|portugal|por)               TAG="PT" ;;
+            ptbr|pt-br|brazil|brazilian|br)           TAG="PTBR" ;;
+            pl|polish|poland|pol)                     TAG="PL" ;;
+            ru|russian|russia|rus)                    TAG="RU" ;;
+            ua|ukr|uk-ua|ukraine)                     TAG="UA" ;;
+            *)                                        TAG="$LANG_VAL"; FALLBACK=1 ;;
+          esac
+
+          export TAG FALLBACK
+
+          perl -0777 -i -pe '
+            my $pat      = qr/\{\}-\{\} FW:\{\}\{\} SDK:\{\}/;
+            my $tag      = $ENV{TAG};
+            my $fallback = $ENV{FALLBACK} // 0;
+
+            my $repl;
+            if ($fallback) {
+              $tag = substr($tag, 0, 4);
+              my $base = sprintf("{0}-%s FW: {2}-{3}", $tag);
+              $base = substr($base, 0, 20) if length($base) > 20;
+              $repl = $base . ("\x00" x (20 - length($base)));
+            } else {
+              my $L = length($tag);
+              if    ($L == 2) { $repl = sprintf("{0}-%s  FW: {2}-{3}\x00", $tag); }
+              elsif ($L == 4) { $repl = sprintf("{0}-%s FW: {2}-{3}", $tag); }
+              elsif ($L == 5) { $repl = sprintf("{0}-%s FW:{2}-{3}", $tag); }
+              else  { die "Unsupported mapped tag length: $L ($tag)\n"; }
+            }
+
+            die "Replacement not 20 bytes (got ".length($repl).")\n" if length($repl) != 20;
+            s/$pat/$repl/ or die "Signature not found for replacement\n";
+          ' "$FILE"
+
       - name: Upload artifact (DBI.zip contains only the NRO)
         uses: actions/upload-artifact@v4
         with:
-          name: DBI_${{ env.LANG }}
-          path: /tmp/DBI_${{ env.VER }}/bin/DBI.nro
+          name: DBI_${{ env.DBI_LANG }}
+          path: /tmp/DBI_${{ env.DBI_VER }}/bin/DBI.nro
           if-no-files-found: error
-          retention-days: 30
+          retention-days: 7

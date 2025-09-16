@@ -3,8 +3,36 @@
 - Add the target language you want to translate into as **rec6.`lang`.txt** and set `ver` and `lang` in the config.txt file.
   - Placeholders in the original and translated strings must match.
   - Please ensure that the total compressed size does not exceed **`14,863 bytes`**.
-    - In the Actions tab, check the build & patch (make translate) job to see the compression size of rec6.bin. (e.g. patched 11769 B/ 14863 B)
+    - In the Actions tab, check the build & Translate job to see the compression size of rec6.bin. (e.g. patched 11769 B/ 14863 B)
 - Check the **Actions tab** to download the output file (DBI_lang.zip).
+
+## Version `lang` values
+
+The following values are recognized (case-insensitive, aliases included).  
+Depending on the mapping, the final 20-byte version string will be patched automatically.
+
+- **Korean**: `ko`, `kr`, `kor`, `korea`, `korean` → `KR`
+- **Japanese**: `ja`, `jp`, `jpn`, `japan`, `japanese` → `JP`
+- **Chinese (Simplified)**: `zhcn`, `zh-cn`, `cn`, `chs`, `zhhans`, `hans` → `ZHCN`
+- **Chinese (Traditional)**: `zhtw`, `zh-tw`, `tw`, `cht`, `zhhant`, `hant` → `ZHTW`
+- **English (US)**: `en`, `us`, `en-us`, `enus`, `american` → `EN`
+- **English (UK)**: `uk`, `gb`, `engb`, `en-gb`, `british` → `ENGB`
+- **French**: `fr`, `french`, `france` → `FR`
+- **French (Canada)**: `frca`, `fr-ca`, `canadianfrench` → `FRCA`
+- **German**: `de`, `german`, `germany`, `deu`, `ger` → `DE`
+- **Italian**: `it`, `italian`, `italy`, `ita` → `IT`
+- **Dutch**: `nl`, `dutch`, `netherlands`, `holland`, `nld` → `NL`
+- **Spanish (Spain)**: `es`, `spanish`, `spain`, `espanol`, `castellano`, `spa` → `ES`
+- **Spanish (Latin America)**: `es419`, `es-419`, `latamspanish` → `ES419`
+- **Portuguese (Portugal)**: `pt`, `portuguese`, `portugal`, `por` → `PT`
+- **Portuguese (Brazil)**: `ptbr`, `pt-br`, `brazil`, `brazilian`, `br` → `PTBR`
+- **Polish**: `pl`, `polish`, `poland`, `pol` → `PL`
+- **Russian**: `ru`, `russian`, `russia`, `rus` → `RU`
+- **Ukrainian**: `ua`, `ukr`, `uk-ua`, `ukraine` → `UA`
+
+### Fallback
+- Any other `lang` values will fall back to their **first 4 characters** and be padded with NUL bytes to exactly 20 bytes.
+- Example: `lang=language` → patched as "DBI: `ver`-**`lang`** FW: `hos_ver`-`nand_type`"
 
 # DBI Multi-lang Translation
 
