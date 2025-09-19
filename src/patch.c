@@ -93,14 +93,6 @@ int patch(const char * dbi, const char * patch, uint32_t slot, const char * path
         return EXIT_FAILURE;
     }
     
-    for (uint32_t i=0; i + 8 <= mf_patch->len; i++) {
-        if(memcmp(&mf_patch->data[i], "\x20\x00\x49\x4E\x53\x30\x33\x34", 8) == 0) {
-            mf_patch->data[i] = 0x0D;
-            lf_i("inline hex patch at offset 0x%X", i);
-            break;
-        }
-    }
-    
     MemFile * mf_dbi = mf_init_path(dbi);
     if(!mf_dbi || mf_dbi->len == 0) {
         lf_e("failed to load '%s'", dbi);
