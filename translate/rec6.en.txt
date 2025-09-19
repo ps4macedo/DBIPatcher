@@ -148,11 +148,7 @@ MMV019=Enter server URL (HTTP or (S)FTP)
 MMV020=Activity log
 MMV021=Tools
 MMV022=Run HTTP server
-MMV023=Missing required keys in /switch/prod.keys file.
-
-Some program functions will be unavailable. 
-Reboot into Hekate and use Lockpick_RCM.bin 
-payload to dump keys from SysNAND.
+MMV023=Missing required keys in /switch/prod.keys file.\n\nSome program functions will be unavailable.\n\nReboot into Hekate and use Lockpick_RCM.bin\npayload to dump keys from SysNAND.
 MAIN001=An error occurred:
 MAIN002=Press any button to exit
 MAIN003=Unknown error occurred
@@ -270,15 +266,9 @@ APP099=Ticket info...
 APP100=Ticket info
 APP101=Getting ticket list...
 APP102=Send via USB
-APP103_1=Are you sure you want to delete {} record?
-
-(+) - YES   B - Cancel
-APP103_2=Are you sure you want to delete {} records?
-
-(+) - YES   B - Cancel
-APP103_5=Are you sure you want to delete {} records?
-
-(+) - YES   B - Cancel
+APP103_1=Are you sure you want to delete {} record?\n\n(+) - YES   B - Cancel
+APP103_2=Are you sure you want to delete {} records?\n\n(+) - YES   B - Cancel
+APP103_5=Are you sure you want to delete {} records?\n\n(+) - YES   B - Cancel
 APP104=Search string: 
 APP105=Clear error flag
 APP106=Found fake record. Version {}
@@ -380,8 +370,7 @@ ACT064=LFS game folder
 ACT065=Unknown title
 ACT066=Title installed
 ACT067=Title not installed
-ACT068=Press (+) to delete, any other button to skip...
- (-) Delete all, stop asking
+ACT068=Press (+) to delete, any other button to skip...\n (-) Delete all, stop asking
 ACT069=Cleaning folder...
 ACT070=is not an LFS folder
 ACT071=Cannot get LFS list
@@ -501,7 +490,7 @@ MTP034=No objects in album
 MTP035=Counting album objects in NAND
 MTP036=Counting album objects on SD card
 MTP037=File open error: {}
-MTP038=Sending file: {}/[36;1m{}[37;1m MB ([32;1m{}[37;1m%) ([33;1m{:.2f}[37;1m MB/sec)   
+MTP038=Sending file: {}/[36;1m{}[37;1m MB ([32;1m{}[37;1m%) ([33;1m{:.2f}[37;1m MB/sec)
 MTP039=Album file download error: {}
 MTP040=Deleting all album objects for game
 MTP041=Scanning games...
@@ -513,19 +502,19 @@ MTP046=Total received: {}
 MTP047=Deleting entire game: [{}]
 MTP048=Deleting title: [{}]
 MTP049=Root not found
-MTP050=Receiving file: {} MB ({:.2f} MB/sec) 
-MTP051=Receiving file: {}/[36;1m{}[37;1m MB ([32;1m{}%[37;1m) ([33;1m{:.2f}[37;1m MB/sec) 
-MTP052=File open error '{}': {}      
-MTP053=Transfer time {:d}:{:02d}:{:02d} 
-MTP054=Transfer speed: {:.2f} MB/sec   
+MTP050=Receiving file: {} MB ({:.2f} MB/sec)
+MTP051=Receiving file: {}/[36;1m{}[37;1m MB ([32;1m{}%[37;1m) ([33;1m{:.2f}[37;1m MB/sec)
+MTP052=File open error '{}': {}
+MTP053=Transfer time {:d}:{:02d}:{:02d}
+MTP054=Transfer speed: {:.2f} MB/sec
 MTP055=Received: {}, ({:.2f} MB/sec)
 MTP056=Something bad is coming
-MTP057_1=Found {} save        
-MTP057_2=Found {} saves       
-MTP057_5=Found {} saves       
-MTP058_1=: {:>4} save      
-MTP058_2=: {:>4} saves     
-MTP058_5=: {:>4} saves     
+MTP057_1=Found {} save
+MTP057_2=Found {} saves
+MTP057_5=Found {} saves
+MTP058_1=: {:>4} save
+MTP058_2=: {:>4} saves
+MTP058_5=: {:>4} saves
 MTP065=Cannot get user list
 MTP066_1=Found {} user
 MTP066_2=Found {} users
@@ -557,8 +546,7 @@ USB003=AMS USB3.0 patch enabled:
 USB004=Firmware does not support USB 3.0
 USB005=USB3.0 system enabled: 
 USB006=USB3.0 device enabled: 
-USB007=
-USB exchange error
+USB007=\nUSB exchange error
 USB008=Waiting for interface enable: 
 USB009=USB interface speed: 
 HTTP01=Album
@@ -575,14 +563,7 @@ VIEW10=  Auto-detect
 VIEW11=Settings
 VIEW12=  Encoding...
 VIEW13=Line wrapping
-VIEW14=There are unsaved changes.
-Do you want to save them?
-
-(+) - Yes, save
-
-(-) - Exit without saving
-
-Other button - Cancel
+VIEW14=There are unsaved changes.\nDo you want to save them?\n\n(+) - Yes, save\n\n(-) - Exit without saving\n\nOther button - Cancel
 VIEW15=L+←-Start, L+→-End, ZL-Case, ZR-Enter, Y-Space, X-Backspace, R3-Language
 VIEW16=  Editing
 VIEW17=Loading file... {}%
@@ -605,13 +586,7 @@ VIEW33=Day
 VIEW34=Night
 VIEW35=Sepia
 VIEW36=Dark room
-VIEW37=DPAD/Sticks - Page navigation
-
-     ZR+ZL - Go to page... 
-
-       L/R - Chapter navigation   
-
-       (-) - This help... (+) - Menu                  
+VIEW37=DPAD/Sticks - Page navigation  \n\n     ZR+ZL - Go to page...     \n\n       L/R - Chapter navigation\n\n       (-) - This help...      \n\n       (+) - Menu              
 VIEW38=Zoom: Fit to screen
 VIEW39=Zoom: Fit to width
 VIEW40=Zoom: Pixel perfect
@@ -623,15 +598,15 @@ INS004=Selected file(s) corrupted
 INS005=Calculating install size...{}%
 INS006=Total transfer size  : 
 INS007=Unknown
-INS008=Total install size : 
-INS009=Install target        : 
-INS010=Delete after install: 
+INS008=Total install size   : 
+INS009=Install target       : 
+INS010=Delete after install : 
 INS011=No 
 INS012= Yes 
 INS013=NAND
 INS014= SD 
 INS015=AUTO
-INS016=Turn off screen        : 
+INS016=Turn off screen      : 
 INS017=Start install
 INS018=Nothing to install
 INS019=Installing titles ({}/{})
@@ -702,15 +677,9 @@ INS082=PFS0 magic error
 INS083=Installation aborted
 INS084=Found invalid personalized ticket
 INS085=Installing ticket...
-INS086=While parsing
-
-{}
-
-the following error occurred:
-
-{}
+INS086=While parsing\n\n{}\n\nthe following error occurred:\n\n{}
 INS087=[OLD FIRMWARE]
-INS088=Copied: {}/{} MB ({:.2f} MB/sec)[0K
+INS088=Copied: {}/{} MB ({:.2f} MB/sec)[0K\r
 INS089=Installing romfs.bin
 INS090=TitleId: {:016X}
 INS091=Deleting old folder {}...
@@ -756,8 +725,7 @@ UPD014=Installing
 UPD015=Base storage: 
 UPD016=Error during title update
 UPD017= [v{}] → [v{}] [{}]
-UPD018= [DLC {}]:
- [v{}] → [v{}] [{}]
+UPD018= [DLC {}]:\n [v{}] → [v{}] [{}]
 UPD019= New DLC {} [{}]
 UPD020=Updating fake record {} → [v{}]
 SAV001=File open error
@@ -832,11 +800,7 @@ SAV059=Restore successful
 SAV060=Restore failed
 SAV061=Creating save backup 
 SAV062=Delete old backups
-SAV063={}
-
-Backup restore failed
-
-Press A - abort, other button - continue
+SAV063={}\n\nBackup restore failed\n\nPress A - abort, other button - continue
 SAV064=Use instead of user {}:
 SAV065=Restore for...
 TIK001=Installed tickets
@@ -874,31 +838,17 @@ FILE021=Cannot create directory
 FILE022=Cannot extract '{}':
 FILE023=Preparing...
 FILE024=Pasting...
-FILE025=Directory name
-'{}'
-contains invalid characters.
-It cannot be created.
-
-Press A - abort, B - skip, X - rename
-FILE026=File name
-'{}'
-contains invalid characters.
-It cannot be created.
-
-Press A - abort, B - skip, X - rename
+FILE025=Directory name\n'{}'\ncontains invalid characters.\nIt cannot be created.\n\nPress A - abort, B - skip, X - rename
+FILE026=File name\n'{}'\ncontains invalid characters.\nIt cannot be created.\n\nPress A - abort, B - skip, X - rename
 FILE027=Extracting file
 FILE028=Enter new name
 FILE029=New name for '{}'
 FILE030=Error during file copy
 FILE031=Cannot create directory '{}':
 FILE032=Cannot create file '{}':
-FILE033=Cannot copy file
-   '{}'
-→ '{}'
-
+FILE033=Cannot copy file\n   '{}'\n→ '{}'\n
 FILE034=Deleting...
-FILE035=Warning!
-Some files were locked and therefore skipped.
+FILE035=Warning!\nSome files were locked and therefore skipped.
 FILE036=Renaming object
 FILE037=Cannot rename '{}' to '{}':
 FILE038=New directory
@@ -908,21 +858,14 @@ FILE042={}/{} MB, {:.2f} MB/sec
 FILE043=Move
 FILE044=Open second panel
 FILE045=Restore as save backup
-FILE046_1=Are you sure you want to delete {} object?
-
-(+) - YES   B - Cancel
-FILE046_2=Are you sure you want to delete {} objects?
-
-(+) - YES   B - Cancel
-FILE046_5=Are you sure you want to delete {} objects?
-
-(+) - YES   B - Cancel
+FILE046_1=Are you sure you want to delete {} object?\n\n(+) - YES   B - Cancel
+FILE046_2=Are you sure you want to delete {} objects?\n\n(+) - YES   B - Cancel
+FILE046_5=Are you sure you want to delete {} objects?\n\n(+) - YES   B - Cancel
 FILE047=Extract to LFS
 FILE048=Set as avatar...
 FILE049=Select user
 FILE050=Avatar set
-FILE051=Failed to set avatar
-{}
+FILE051=Failed to set avatar\n{}
 FILE052=Compression error
 FILE053=Image loading error
 FILE054=Create new file...
@@ -934,17 +877,10 @@ FILE059=For logs
 FILE060=File operations
 FILE061=Update DBI from this file
 FILE062=Updating. Please wait...
-FILE063=Update complete
-
-Press any button
-to restart DBI
+FILE063=Update complete\n\nPress any button\nto restart DBI
 FILE064=Reading file list...
-FILE065=Updating version to {} {}
-
-Press (+) to continue
-Any other button to cancel
-FILE066=Press (+) to overwrite config with updated one
-Any other button to skip
+FILE065=Updating version to {} {}\n\nPress (+) to continue\nAny other button to cancel
+FILE066=Press (+) to overwrite config with updated one\n\nAny other button to skip
 FILE067=Shortcut arguments
 FILE068=Enter shortcut arguments or leave empty
 FILE069=Create shortcut
@@ -987,9 +923,7 @@ UTL033_2=Found {} files
 UTL033_5=Found {} files
 UTL034={:>3} {}{:<50}[37;1m {:>10}
 UTL035=     {:<10} Encryption: {} Install size: {}{:>10}
-UTL036=      Title: {}
-      Publisher: {}
-      Version: 
+UTL036=      Title: {}\n      Publisher: {}\n      Version: 
 UTL037=Total install size: {}
 UTL038=NSP info
 ACTL001=ZL/ZR - change date, Y - period, X - sort, (+) - select user
@@ -1061,9 +995,7 @@ TOOLS007=Received time: {}
 TOOLS008=Updating time...
 TOOLS009=Delete user
 TOOLS010=Delete user
-TOOLS011=Are you sure you want to delete {}?
-
-(+) - YES, other button - NO
+TOOLS011=Are you sure you want to delete {}?\n\n(+) - YES, other button - NO
 TOOLS012=AccountUID: {}
 TOOLS013=Nintendo Account set and linked
 TOOLS014=Nintendo Account set but not linked
@@ -1074,11 +1006,9 @@ TOOLS018=Launch random game
 TOOLS019=Manual time sync permission required in Internet settings
 TOOLS020=Delete Wi-Fi profile
 TOOLS021=Delete Wi-Fi profile
-TOOLS022=Are you sure you want to delete {}?
-
-(+) - YES, other button - NO
-TOOLS023={:>6} objects processed. {:>5} records found...
-TOOLS024={:>6}/{}kB already downloaded...
+TOOLS022=Are you sure you want to delete {}?\n\n(+) - YES, other button - NO
+TOOLS023={:>6} objects processed. {:>5} records found...\r
+TOOLS024={:>6}/{}kB already downloaded...\r
 TOOLS025=Update TitleDB
 TOOLS026=Updating TitleDB
 TOOLS027=Create fake app record
@@ -1095,7 +1025,7 @@ TOOLS037=Fill NAND free space with zeros
 TOOLS038=Free space: {}
 TOOLS039=Creating placeholder: {}...
 TOOLS040=Filling with zeros
-TOOLS041=\r{}/{} MB (Avg: {:.1f} MB/sec, Cur: {:.1f} MB/sec) Rem. {:02d}:{:02d}                         
+TOOLS041={}/{} MB (Avg: {:.1f} MB/sec, Cur: {:.1f} MB/sec) Rem. {:02d}:{:02d}      \r
 TOOLS042=Complete
 TOOLS043=Deleting placeholder...
 TOOLS044=Fill SD free space with zeros
@@ -1258,4 +1188,4 @@ ALB001=Album HTTP browser
 ALB002=Unknown game [{:016x}]
 ALB003=DBI Album Browser
 ALB004=All objects
-ALB005=System applications
+ALB005=System applications\r

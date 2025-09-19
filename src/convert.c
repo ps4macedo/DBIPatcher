@@ -30,7 +30,17 @@ static void convert_keys_placeholders(FILE * out_keys, const char * str, uint32_
     fwrite("\n", 1, 1, out_keys);
 }
 
-/* Decode CR/LF escapes in-palce */
+/* Write CR/LF escapes on extraction */
+static void convert_escape_cr_lf(FILE * out, const char * str, uint32_t len) {
+    for (uint32_t i = 0; i < len; i++) {
+        unsigned char c = (unsigned char)str[i];
+        if (c == '\r')      fwrite("\\r", 1, 2, out);
+        else if (c == '\n') fwrite("\\n", 1, 2, out);
+        else                fwrite(&c,    1, 1, out);
+    }
+}
+
+/* Decode CR/LF escapes in-place */
 static void convert_decode_cr_lf(MemFile * in) {
     uint8_t *src = in->data;
     uint8_t *dst = in->data;
@@ -88,7 +98,7 @@ static int convert_unpack(MemFile * in, FILE * out, FILE * out_keys) {
     while(ptr - start < len) {
         uint32_t cur_len = strlen(ptr);
         
-        fwrite(ptr, 1, cur_len, out);
+        convert_escape_cr_lf(out, ptr, cur_len);
         
         if(key++ & 1) {
             key_cnt++;
