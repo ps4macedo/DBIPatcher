@@ -30,6 +30,33 @@ static void convert_keys_placeholders(FILE * out_keys, const char * str, uint32_
     fwrite("\n", 1, 1, out_keys);
 }
 
+/* Decode CR/LF escapes in-palce */
+static void convert_decode_cr_lf(MemFile * in) {
+    uint8_t *src = in->data;
+    uint8_t *dst = in->data;
+    uint8_t *end = in->data + in->len;
+    while (src < end) {
+        if (*src != '\\') {
+            *dst++ = *src++;
+            continue;
+        }
+        src++;
+        if (src >= end) {
+            *dst++ = '\\';
+            break;
+        }
+        switch (*src) {
+            case 'r': *dst++ = 0x0D; src++; break;
+            case 'n': *dst++ = 0x0A; src++; break;
+            default:
+                *dst++ = '\\';
+                *dst++ = *src++;
+                break;
+        }
+    }
+    in->len = (uint32_t)(dst - in->data);
+}
+
 static int convert_unpack(MemFile * in, FILE * out, FILE * out_keys) {
     uint32_t len = 0;
     uint32_t nulls = 0;
@@ -88,6 +115,8 @@ static int convert_unpack(MemFile * in, FILE * out, FILE * out_keys) {
 }
 
 static int convert_pack(MemFile * in, FILE * out, FILE * out_keys) {
+    convert_decode_cr_lf(in);
+
     uint32_t key_cnt = 0;
     uint32_t line_start = 0;
     uint8_t key_found = 0;
