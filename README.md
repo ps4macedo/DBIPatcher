@@ -1,12 +1,12 @@
 # How to build?
-- Add the latest Russian version NRO file to the dbi folder as **`DBI.ver.lang.nro`**.
-- Add the target language you want to translate into as **rec6.`lang`.txt** and set `ver` and `lang` in the config.txt file.
+- Add the latest Russian version NRO file to the dbi folder as **`DBI.ver.base_lang.nro`**.
+- Add the target language you want to translate into as **rec6.`target_lang`.txt** and set `ver` and `target_lang` in the config.txt file.
   - Placeholders in the original and translated strings must match.
   - Please ensure that the total compressed size does not exceed **`14,863 bytes`**.
-    - In the Actions tab, check the build & Translate job to see the compression size of rec6.bin. (e.g. patched 11769 B/ 14863 B)
+    - In the Actions tab, check the build & Patch job to see the compression size of rec6.bin. (e.g. patched 11769 B/ 14863 B)
 - Check the **Actions tab** to download the output file (DBI_lang.zip).
 
-## Version `lang` values
+## Version `target_lang` values
 
 The following values are recognized (case-insensitive, aliases included).  
 Depending on the mapping, the final 20-byte version string will be patched automatically.
@@ -31,8 +31,8 @@ Depending on the mapping, the final 20-byte version string will be patched autom
 - **Ukrainian**: `ua`, `ukr`, `uk-ua`, `ukraine` → `UA`
 
 ### Fallback
-- Any other `lang` values will fall back to their **first 4 characters** and be padded with NUL bytes to exactly 20 bytes.
-- Example: `lang=language` → patched as "DBI: `ver`-**`lang`** FW: `hos_ver`-`nand_type`"
+- Any other `target_lang` values will fall back to their **first 4 characters** and be padded with NUL bytes to exactly 20 bytes.
+- Example: `target_lang=language` → patched as "DBI: `ver`-**`target_lang`** FW: `hos_ver`-`nand_type`"
 
 # DBI Multi-lang Translation
 
