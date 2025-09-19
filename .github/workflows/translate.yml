@@ -23,19 +23,19 @@ jobs:
 
       - name: Read config
         run: |
-          LANG_VAL="$(awk -F= '/^[[:space:]]*lang[[:space:]]*=/{gsub(/^[ \t]+|[ \t]+$/,"",$2);print $2}' "$CONFIG_FILE" 2>/dev/null | tr -d '\r')"
+          LANG_VAL="$(awk -F= '/^[[:space:]]*target_lang[[:space:]]*=/{gsub(/^[ \t]+|[ \t]+$/,"",$2);print $2}' "$CONFIG_FILE" 2>/dev/null | tr -d '\r')"
           VER_VAL="$(awk -F= '/^[[:space:]]*ver[[:space:]]*=/{gsub(/^[ \t]+|[ \t]+$/,"",$2);print $2}' "$CONFIG_FILE" 2>/dev/null | tr -d '\r')"
           [ -z "$LANG_VAL" ] && LANG_VAL="en"
           [ -z "$VER_VAL" ] && VER_VAL="810"
-          echo "DBI_LANG=$LANG_VAL" >> "$GITHUB_ENV"
+          echo "DBI_TARGET=$LANG_VAL"   >> "$GITHUB_ENV"
           echo "DBI_VER=$VER_VAL"       >> "$GITHUB_ENV"
 
-      - name: Build & Translate
-        run: LANG="${DBI_LANG}" make translate
+      - name: Build & Patch
+        run: LANG="${DBI_TARGET}" make translate
 
       - name: Patch version
         run: |
-          LANG_VAL="${DBI_LANG}"
+          LANG_VAL="${DBI_TARGET}"
           FILE="/tmp/DBI_${DBI_VER}/bin/DBI.nro"
 
           FALLBACK=0
@@ -90,7 +90,7 @@ jobs:
       - name: Upload artifact (DBI.zip contains only the NRO)
         uses: actions/upload-artifact@v4
         with:
-          name: DBI_${{ env.DBI_LANG }}
+          name: DBI_${{ env.DBI_TARGET }}
           path: /tmp/DBI_${{ env.DBI_VER }}/bin/DBI.nro
           if-no-files-found: error
           retention-days: 7

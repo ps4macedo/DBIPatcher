@@ -1,2 +1,3 @@
 ver=810
-lang=ko
+base_lang=ru
+target_lang=ko
