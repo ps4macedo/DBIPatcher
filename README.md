@@ -32,7 +32,7 @@ Depending on the mapping, the final 20-byte version string will be patched autom
 
 ### Fallback
 - Any other `target_lang` values will fall back to their **first 4 characters** and be padded with NUL bytes to exactly 20 bytes.
-- Example: `target_lang=language` → patched as "DBI: `ver`-**`target_lang`** FW: `hos_ver`-`nand_type`"
+- Example: `target_lang=example` → patched as "DBI: `ver`-**`exam`** FW: `hos_ver`-`nand_type`"
 
 # DBI Multi-lang Translation
 
