@@ -1188,4 +1188,4 @@ ALB001=Album HTTP browser
 ALB002=Unknown game [{:016x}]
 ALB003=DBI Album Browser
 ALB004=All objects
-ALB005=System applications\r
+ALB005=System applications
