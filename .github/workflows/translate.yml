@@ -23,8 +23,8 @@ jobs:
       - id: read-config
         name: Read config
         run: |
-          TARGET=$(awk -F= '/^[[:space:]]*target_lang[[:space:]]*=/{gsub(/^[ 	]+|[ 	]+$/,"",$2);print $2}' "${CONFIG_FILE}" 2>/dev/null | tr -d '\r')
-          VER=$(awk -F= '/^[[:space:]]*ver[[:space:]]*=/{gsub(/^[ 	]+|[ 	]+$/,"",$2);print $2}' "${CONFIG_FILE}" 2>/dev/null | tr -d '\r')
+          TARGET=$(awk -F= '/^[[:space:]]*target_lang[[:space:]]*=/{gsub(/^[ \t]+|[ \t]+$/,"",$2);print $2}' "${CONFIG_FILE}" 2>/dev/null | tr -d '\r')
+          VER=$(awk -F= '/^[[:space:]]*ver[[:space:]]*=/{gsub(/^[ \t]+|[ \t]+$/,"",$2);print $2}' "${CONFIG_FILE}" 2>/dev/null | tr -d '\r')
           if [ -z "$TARGET" ]; then TARGET="en"; fi
           if [ -z "$VER" ]; then VER="810"; fi
           echo "target=$TARGET" >> "$GITHUB_OUTPUT"
@@ -74,11 +74,8 @@ jobs:
               print("::error::No target languages resolved from configuration", file=sys.stderr)
               sys.exit(1)
 
-          print(f"matrix={{json.dumps({'include': include})}}")
-PY
-
-  build:
-PY
+          print(f"matrix={json.dumps({'include': include})}")
+          PY
 
   build:
     needs: prepare
@@ -106,10 +103,6 @@ PY
 
       - name: Build & Patch
         run: LANG="${DBI_TARGET}" make translate
-
-      - name: Patch version
-        run: |
-          python3 scripts/patch_version.py --file /tmp/DBI_${DBI_VER}/bin/DBI.nro --lang "${DBI_TARGET}"
 
       - name: Upload artifact (DBI.zip contains only the NRO)
         uses: actions/upload-artifact@v4
