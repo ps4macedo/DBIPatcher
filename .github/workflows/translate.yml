@@ -3,15 +3,90 @@ on:
   push:
     branches:
       - '**'
+  pull_request:
   workflow_dispatch:
 permissions:
-  contents: read
+  contents: write
 
 jobs:
-  build:
+  prepare:
     runs-on: ubuntu-latest
     env:
       CONFIG_FILE: config.txt
+    outputs:
+      matrix: ${{ steps.prepare-matrix.outputs.matrix }}
+      ver: ${{ steps.read-config.outputs.ver }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - id: read-config
+        name: Read config
+        run: |
+          TARGET=$(awk -F= '/^[[:space:]]*target_lang[[:space:]]*=/{gsub(/^[ 	]+|[ 	]+$/,"",$2);print $2}' "${CONFIG_FILE}" 2>/dev/null | tr -d '\r')
+          VER=$(awk -F= '/^[[:space:]]*ver[[:space:]]*=/{gsub(/^[ 	]+|[ 	]+$/,"",$2);print $2}' "${CONFIG_FILE}" 2>/dev/null | tr -d '\r')
+          if [ -z "$TARGET" ]; then TARGET="en"; fi
+          if [ -z "$VER" ]; then VER="810"; fi
+          echo "target=$TARGET" >> "$GITHUB_OUTPUT"
+          echo "ver=$VER" >> "$GITHUB_OUTPUT"
+
+      - id: prepare-matrix
+        name: Prepare matrix
+        env:
+          TARGET_VAL: ${{ steps.read-config.outputs.target }}
+        run: |
+          python - <<'PY' >> "$GITHUB_OUTPUT"
+import glob
+import json
+import os
+import sys
+
+target = os.environ.get("TARGET_VAL", "").strip()
+if not target:
+    target = "en"
+
+include = []
+if target.lower() == "all":
+    files = sorted(glob.glob("translate/rec6.*.txt"))
+    if not files:
+        print("::error::No translation files found in translate/rec6.*.txt", file=sys.stderr)
+        sys.exit(1)
+    seen = set()
+    for path in files:
+        base = os.path.basename(path)
+        parts = base.split(".")
+        if len(parts) < 3:
+            continue
+        lang = ".".join(parts[1:-1]).strip()
+        if not lang or lang.lower() == "ru":
+            continue
+        if lang in seen:
+            continue
+        seen.add(lang)
+        include.append({"target": lang})
+else:
+    if target.lower() == "ru":
+        print("::warning::target_lang=ru skipped because base language is already Russian", file=sys.stderr)
+    else:
+        include.append({"target": target})
+
+if not include:
+    print("::error::No target languages resolved from configuration", file=sys.stderr)
+    sys.exit(1)
+
+print(f"matrix={json.dumps({'include': include})}")
+PY
+
+  build:
+    needs: prepare
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.prepare.outputs.matrix) }}
+    env:
+      CONFIG_FILE: config.txt
+      DBI_VER: ${{ needs.prepare.outputs.ver }}
+      DBI_TARGET: ${{ matrix.target }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -21,76 +96,75 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y build-essential zstd libzstd-dev
 
-      - name: Read config
+      - name: Install Python deps
         run: |
-          LANG_VAL="$(awk -F= '/^[[:space:]]*target_lang[[:space:]]*=/{gsub(/^[ \t]+|[ \t]+$/,"",$2);print $2}' "$CONFIG_FILE" 2>/dev/null | tr -d '\r')"
-          VER_VAL="$(awk -F= '/^[[:space:]]*ver[[:space:]]*=/{gsub(/^[ \t]+|[ \t]+$/,"",$2);print $2}' "$CONFIG_FILE" 2>/dev/null | tr -d '\r')"
-          [ -z "$LANG_VAL" ] && LANG_VAL="en"
-          [ -z "$VER_VAL" ] && VER_VAL="810"
-          echo "DBI_TARGET=$LANG_VAL"   >> "$GITHUB_ENV"
-          echo "DBI_VER=$VER_VAL"       >> "$GITHUB_ENV"
+          python3 -m pip install --upgrade pip
+          python3 -m pip install zstandard
 
       - name: Build & Patch
         run: LANG="${DBI_TARGET}" make translate
 
       - name: Patch version
         run: |
-          LANG_VAL="${DBI_TARGET}"
-          FILE="/tmp/DBI_${DBI_VER}/bin/DBI.nro"
-
-          FALLBACK=0
-          l=$(printf '%s' "$LANG_VAL" | tr '[:upper:]' '[:lower:]')
-          case "$l" in
-            ko|kr|kor|korea|korean)                   TAG="KR" ;;
-            ja|jp|jpn|japan|japanese)                 TAG="JP" ;;
-            zhcn|zh-cn|cn|chs|zhhans|hans)            TAG="ZHCN" ;;
-            zhtw|zh-tw|tw|cht|zhhant|hant)            TAG="ZHTW" ;;
-            en|us|en-us|enus|american)                TAG="EN" ;;
-            uk|gb|engb|en-gb|british)                 TAG="ENGB" ;;
-            fr|french|france)                         TAG="FR" ;;
-            frca|fr-ca|canadianfrench)                TAG="FRCA" ;;
-            de|german|germany|deu|ger)                TAG="DE" ;;
-            it|italian|italy|ita)                     TAG="IT" ;;
-            nl|dutch|netherlands|holland|nld)         TAG="NL" ;;
-            es|spanish|spain|espanol|castellano|spa)  TAG="ES" ;;
-            es419|es-419|latamspanish)                TAG="ES419" ;;
-            pt|portuguese|portugal|por)               TAG="PT" ;;
-            ptbr|pt-br|brazil|brazilian|br)           TAG="PTBR" ;;
-            pl|polish|poland|pol)                     TAG="PL" ;;
-            ru|russian|russia|rus)                    TAG="RU" ;;
-            ua|ukr|uk-ua|ukraine)                     TAG="UA" ;;
-            *)                                        TAG="$LANG_VAL"; FALLBACK=1 ;;
-          esac
-
-          export TAG FALLBACK
-
-          perl -0777 -i -pe '
-            my $pat      = qr/\{\}-\{\} FW:\{\}\{\} SDK:\{\}/;
-            my $tag      = $ENV{TAG};
-            my $fallback = $ENV{FALLBACK} // 0;
-
-            my $repl;
-            if ($fallback) {
-              $tag = substr($tag, 0, 4);
-              my $base = sprintf("{0}-%s FW: {2}-{3}", $tag);
-              $base = substr($base, 0, 20) if length($base) > 20;
-              $repl = $base . ("\x00" x (20 - length($base)));
-            } else {
-              my $L = length($tag);
-              if    ($L == 2) { $repl = sprintf("{0}-%s  FW: {2}-{3}\x00", $tag); }
-              elsif ($L == 4) { $repl = sprintf("{0}-%s FW: {2}-{3}", $tag); }
-              elsif ($L == 5) { $repl = sprintf("{0}-%s FW:{2}-{3}", $tag); }
-              else  { die "Unsupported mapped tag length: $L ($tag)\n"; }
-            }
-
-            die "Replacement not 20 bytes (got ".length($repl).")\n" if length($repl) != 20;
-            s/$pat/$repl/ or die "Signature not found for replacement\n";
-          ' "$FILE"
+          python3 scripts/patch_version.py --file /tmp/DBI_${DBI_VER}/bin/DBI.nro --lang "${DBI_TARGET}"
 
       - name: Upload artifact (DBI.zip contains only the NRO)
         uses: actions/upload-artifact@v4
         with:
-          name: DBI_${{ env.DBI_TARGET }}
+          name: DBI_${{ matrix.target }}
           path: /tmp/DBI_${{ env.DBI_VER }}/bin/DBI.nro
           if-no-files-found: error
           retention-days: 7
+
+  release:
+    needs:
+      - prepare
+      - build
+    if: ${{ github.event_name != 'pull_request' }}
+    runs-on: ubuntu-latest
+    env:
+      DBI_VER: ${{ needs.prepare.outputs.ver }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+          pattern: DBI_*
+          merge-multiple: true
+
+      - name: Prepare release metadata
+        id: meta
+        run: |
+          SHORT_SHA=${GITHUB_SHA::7}
+          TAG="dbi-${DBI_VER}-${SHORT_SHA}"
+          NAME="DBI ${DBI_VER} (${SHORT_SHA})"
+          printf 'tag=%s\n' "$TAG" >> "$GITHUB_OUTPUT"
+          printf 'name=%s\n' "$NAME" >> "$GITHUB_OUTPUT"
+
+      - name: Generate changelog
+        run: |
+          LAST_TAG=$(git describe --tags --match 'dbi-*' --abbrev=0 2>/dev/null || echo '')
+          if [ -n "$LAST_TAG" ]; then
+            RANGE="$LAST_TAG..HEAD"
+          else
+            RANGE="HEAD^..HEAD"
+          fi
+          git log "$RANGE" --pretty=format:'- %s (%h)' > CHANGELOG.md || true
+          if ! [ -s CHANGELOG.md ]; then
+            git log -1 --pretty=format:'- %s (%h)' > CHANGELOG.md
+          fi
+
+      - name: Create release
+        uses: ncipollo/release-action@v1
+        with:
+          tag: ${{ steps.meta.outputs.tag }}
+          name: ${{ steps.meta.outputs.name }}
+          bodyFile: CHANGELOG.md
+          artifacts: dist/**
+          artifactErrorsFailBuild: true
+          allowUpdates: true

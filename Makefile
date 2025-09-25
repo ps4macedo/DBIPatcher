@@ -77,6 +77,7 @@ ifeq ($(DBI_TARGET),ua)
 	@$(PYTHON3) -c "import shutil; shutil.move(r'$(TMPDIR)/bin/DBI.font.nro', r'$(TMPDIR)/bin/DBI.nro')"
 endif
 
+	@$(PYTHON3) scripts/patch_version.py --file $(TMPDIR)/bin/DBI.nro --lang $(DBI_TARGET)
 debug: $(TARGET)
 	@valgrind $(TARGET)
 
