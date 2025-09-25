@@ -1,6 +1,9 @@
 # How to build?
 - Add the latest Russian version NRO file to the dbi folder as **`DBI.ver.base_lang.nro`**.
 - Add the target language you want to translate into as **rec6.`target_lang`.txt** and set `ver` and `target_lang` in the config.txt file.
+  - Set `target_lang=all` to build patches for every `translate/rec6.*.txt` except Russian; each run produces one artifact per language.
+  - GitHub Actions now publishes a release per push with all artifacts attached and an auto-generated changelog using the short commit hash.
+  - Для української локалізації під час збірки автоматично патчиться шрифт `font/0x7555E0_bundle.ttf` за допомогою `mirror_glyph.py`/`patch_font.py` (потрібні `python3` та пакет `zstandard`).
   - Placeholders in the original and translated strings must match.
   - Please ensure that the total compressed size does not exceed **`14,863 bytes`**.
     - In the Actions tab, check the build & Patch job to see the compression size of rec6.bin. (e.g. patched 11769 B/ 14863 B)
@@ -101,8 +104,16 @@ would be of course manualy checking all strings.
 ```bash
 git clone <repository-url>
 cd <repository-directory>
-make translate-810
+make translate
 ```
+
+To build a single language and place the NRO in `out/dbi/`, run:
+
+```bash
+make translate-lang LANGUAGE=<code>
+```
+
+The helper script `scripts/build_translations.py` powers these targets, so you can also run it directly if you need custom workflows (see `--help`).
 
 ### Manual Usage
 The `dbipatcher` utility provides several operations:

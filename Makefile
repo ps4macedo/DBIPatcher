@@ -55,6 +55,10 @@ DBI_VER    ?= $(if $(VER_FROM_CFG),$(VER_FROM_CFG),810)
 DBI_BASE := dbi/DBI.$(DBI_VER).$(DBI_LANG).nro
 TMPDIR   := /tmp/DBI_$(DBI_VER)
 
+OUT_DIR := out/dbi
+TRANSLATE_SCRIPT := scripts/build_translations.py
+
+
 
 PYTHON3 ?= python3
 FONTDIR := font
@@ -64,6 +68,18 @@ UA_FONT_ADDR ?= 0x7555E0
 UA_FONT_MAX ?= 596378
 
 translate: $(TARGET)
+	@if [ -n "$(LANGUAGE)" ]; then \
+		DBI_VER=$(DBI_VER) DBI_LANG=$(DBI_LANG) DBI_BASE=$(DBI_BASE) DBI_TMPDIR=$(TMPDIR) OUT_DIR=$(OUT_DIR) MAKE=$(MAKE) $(PYTHON3) $(TRANSLATE_SCRIPT) --lang $(LANGUAGE); \
+	else \
+		DBI_VER=$(DBI_VER) DBI_LANG=$(DBI_LANG) DBI_BASE=$(DBI_BASE) DBI_TMPDIR=$(TMPDIR) OUT_DIR=$(OUT_DIR) MAKE=$(MAKE) $(PYTHON3) $(TRANSLATE_SCRIPT) --all; \
+	fi
+
+translate-lang: $(TARGET)
+	@if [ -z "$(LANGUAGE)" ]; then echo "LANGUAGE variable is required, e.g. make translate-lang LANGUAGE=en"; exit 1; fi
+	@DBI_VER=$(DBI_VER) DBI_LANG=$(DBI_LANG) DBI_BASE=$(DBI_BASE) DBI_TMPDIR=$(TMPDIR) OUT_DIR=$(OUT_DIR) MAKE=$(MAKE) $(PYTHON3) $(TRANSLATE_SCRIPT) --lang $(LANGUAGE)
+
+translate-core: $(TARGET)
+	@rm -rf $(TMPDIR)
 	@$(TARGET) --extract $(DBI_BASE) --output $(TMPDIR)
 	@$(PYTHON3) -c 'from pathlib import Path; from sys import exit; p = Path("translate/rec6.$(DBI_LANG).txt"); p.exists() or exit(0); data = p.read_bytes(); new = data.replace(b"\r\n", b"\n").replace(b"\r", b"\n"); (data != new) and p.write_bytes(new)'
 	@$(PYTHON3) -c 'from pathlib import Path; from sys import exit; p = Path("translate/rec6.$(DBI_TARGET).txt"); p.exists() or exit(0); data = p.read_bytes(); new = data.replace(b"\r\n", b"\n").replace(b"\r", b"\n"); (data != new) and p.write_bytes(new)'
@@ -76,9 +92,9 @@ ifeq ($(DBI_TARGET),ua)
 	@$(PYTHON3) $(FONTDIR)/patch_font.py $(TMPDIR)/bin/DBI.nro $(UA_FONT_PATCHED) $(TMPDIR)/bin/DBI.font.nro $(UA_FONT_ADDR) $(UA_FONT_MAX)
 	@$(PYTHON3) -c "import shutil; shutil.move(r'$(TMPDIR)/bin/DBI.font.nro', r'$(TMPDIR)/bin/DBI.nro')"
 endif
-
 	@$(PYTHON3) scripts/patch_version.py --file $(TMPDIR)/bin/DBI.nro --lang $(DBI_TARGET)
+
 debug: $(TARGET)
 	@valgrind $(TARGET)
 
-.PHONY: all clean translate
+.PHONY: all clean translate translate-lang translate-core
