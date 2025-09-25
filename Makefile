@@ -65,6 +65,8 @@ UA_FONT_MAX ?= 596378
 
 translate: $(TARGET)
 	@$(TARGET) --extract $(DBI_BASE) --output $(TMPDIR)
+	@$(PYTHON3) -c 'from pathlib import Path; from sys import exit; p = Path("translate/rec6.$(DBI_LANG).txt"); p.exists() or exit(0); data = p.read_bytes(); new = data.replace(b"\r\n", b"\n").replace(b"\r", b"\n"); (data != new) and p.write_bytes(new)'
+	@$(PYTHON3) -c 'from pathlib import Path; from sys import exit; p = Path("translate/rec6.$(DBI_TARGET).txt"); p.exists() or exit(0); data = p.read_bytes(); new = data.replace(b"\r\n", b"\n").replace(b"\r", b"\n"); (data != new) and p.write_bytes(new)'
 	@$(TARGET) --convert $(TMPDIR)/rec6.bin --output translate/rec6.$(DBI_LANG).txt --keys $(TMPDIR)/keys_$(DBI_LANG).txt
 	@$(TARGET) --convert translate/rec6.$(DBI_TARGET).txt --output $(TMPDIR)/rec6.$(DBI_TARGET).bin --keys $(TMPDIR)/keys_$(DBI_TARGET).txt
 	@$(TARGET) --patch $(TMPDIR)/rec6.$(DBI_TARGET).bin --binary $(DBI_BASE) --output $(TMPDIR)/bin/DBI.nro --slot 6
