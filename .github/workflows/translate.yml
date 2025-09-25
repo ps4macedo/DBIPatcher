@@ -35,46 +35,49 @@ jobs:
         env:
           TARGET_VAL: ${{ steps.read-config.outputs.target }}
         run: |
-          python - <<'PY' >> "$GITHUB_OUTPUT"
-import glob
-import json
-import os
-import sys
+          python3 - <<'PY' >> "$GITHUB_OUTPUT"
+          import glob
+          import json
+          import os
+          import sys
 
-target = os.environ.get("TARGET_VAL", "").strip()
-if not target:
-    target = "en"
+          target = os.environ.get("TARGET_VAL", "").strip()
+          if not target:
+              target = "en"
 
-include = []
-if target.lower() == "all":
-    files = sorted(glob.glob("translate/rec6.*.txt"))
-    if not files:
-        print("::error::No translation files found in translate/rec6.*.txt", file=sys.stderr)
-        sys.exit(1)
-    seen = set()
-    for path in files:
-        base = os.path.basename(path)
-        parts = base.split(".")
-        if len(parts) < 3:
-            continue
-        lang = ".".join(parts[1:-1]).strip()
-        if not lang or lang.lower() == "ru":
-            continue
-        if lang in seen:
-            continue
-        seen.add(lang)
-        include.append({"target": lang})
-else:
-    if target.lower() == "ru":
-        print("::warning::target_lang=ru skipped because base language is already Russian", file=sys.stderr)
-    else:
-        include.append({"target": target})
+          include = []
+          if target.lower() == "all":
+              files = sorted(glob.glob("translate/rec6.*.txt"))
+              if not files:
+                  print("::error::No translation files found in translate/rec6.*.txt", file=sys.stderr)
+                  sys.exit(1)
+              seen = set()
+              for path in files:
+                  base = os.path.basename(path)
+                  parts = base.split(".")
+                  if len(parts) < 3:
+                      continue
+                  lang = ".".join(parts[1:-1]).strip()
+                  if not lang or lang.lower() == "ru":
+                      continue
+                  if lang in seen:
+                      continue
+                  seen.add(lang)
+                  include.append({"target": lang})
+          else:
+              if target.lower() == "ru":
+                  print("::warning::target_lang=ru skipped because base language is already Russian", file=sys.stderr)
+              else:
+                  include.append({"target": target})
 
-if not include:
-    print("::error::No target languages resolved from configuration", file=sys.stderr)
-    sys.exit(1)
+          if not include:
+              print("::error::No target languages resolved from configuration", file=sys.stderr)
+              sys.exit(1)
 
-print(f"matrix={json.dumps({'include': include})}")
+          print(f"matrix={{json.dumps({'include': include})}}")
+PY
+
+  build:
 PY
 
   build:
