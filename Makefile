@@ -55,11 +55,25 @@ DBI_VER    ?= $(if $(VER_FROM_CFG),$(VER_FROM_CFG),810)
 DBI_BASE := dbi/DBI.$(DBI_VER).$(DBI_LANG).nro
 TMPDIR   := /tmp/DBI_$(DBI_VER)
 
+
+PYTHON3 ?= python3
+FONTDIR := font
+UA_FONT_RAW := $(FONTDIR)/0x7555E0_bundle.ttf
+UA_FONT_PATCHED := $(TMPDIR)/font/0x7555E0_bundle_patched.ttf
+UA_FONT_ADDR ?= 0x7555E0
+UA_FONT_MAX ?= 596378
+
 translate: $(TARGET)
 	@$(TARGET) --extract $(DBI_BASE) --output $(TMPDIR)
 	@$(TARGET) --convert $(TMPDIR)/rec6.bin --output translate/rec6.$(DBI_LANG).txt --keys $(TMPDIR)/keys_$(DBI_LANG).txt
 	@$(TARGET) --convert translate/rec6.$(DBI_TARGET).txt --output $(TMPDIR)/rec6.$(DBI_TARGET).bin --keys $(TMPDIR)/keys_$(DBI_TARGET).txt
 	@$(TARGET) --patch $(TMPDIR)/rec6.$(DBI_TARGET).bin --binary $(DBI_BASE) --output $(TMPDIR)/bin/DBI.nro --slot 6
+ifeq ($(DBI_TARGET),ua)
+	@mkdir -p $(dir $(UA_FONT_PATCHED))
+	@$(PYTHON3) $(FONTDIR)/mirror_glyph.py $(UA_FONT_RAW) $(UA_FONT_PATCHED)
+	@$(PYTHON3) $(FONTDIR)/patch_font.py $(TMPDIR)/bin/DBI.nro $(UA_FONT_PATCHED) $(TMPDIR)/bin/DBI.font.nro $(UA_FONT_ADDR) $(UA_FONT_MAX)
+	@$(PYTHON3) -c "import shutil; shutil.move(r'$(TMPDIR)/bin/DBI.font.nro', r'$(TMPDIR)/bin/DBI.nro')"
+endif
 
 debug: $(TARGET)
 	@valgrind $(TARGET)
