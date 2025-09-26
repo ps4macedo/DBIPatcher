@@ -212,13 +212,15 @@ jobs:
           TAG_NAME=${{ steps.meta.outputs.tag }}
           {
             printf '![GitHub release (tag)](https://img.shields.io/github/downloads/rashevskyv/DBIPatcher/%s/total)\n\n' "$TAG_NAME"
-            printf '%s\n' '> 04 Jul 2023'
-            printf '%s\n' '> **Me:** Will you mind if the translation is added as an NRO patch?'
-            printf '%s\n' '> **duckbill:** If you want to add it as a patch go ahead, but warn users that there may be surprises. 486 is the last one without checks. Nothing destructive will happen. It will just start forgetting to do what was asked, and the further it goes, the more often it will happen. Stribog + part under RSA4096. Cryptography is my diploma specialty :) By the way, no one has managed to crack the protection in ebookdroid yet since 2011 despite 8M+ installs.'
-            printf '\n'
-            printf '%s\n' '> 23 Sep 2025, 13:37'
-            printf '%s\n' '> **duckbill:** Congratulations, you fell for the English version of DBI. Now your console has a tag that can only be removed by rolling back from a backup. Get ready for a wide variety of glitches.'
-            printf '\n'
+            printf '### Author Warning on Independent Translations\n\n'
+            printf '> *04 Jul 2023*\n'
+            printf '> \n'
+            printf '> **Me:** Will you mind if the translation is added as an NRO patch?\n'
+            printf '> \n'
+            printf '> **duckbill:** If you want to add it as a patch go ahead, but warn users that there may be surprises. 486 is the last one without checks. Nothing destructive will happen. It will just start forgetting to do what was asked, and the further it goes, the more often it will happen. Stribog + part under RSA4096. Cryptography is my diploma specialty :) By the way, no one has managed to crack the protection in ebookdroid yet since 2011 despite 8M+ installs.\n\n'
+            printf '> *23 Sep 2025*\n'
+            printf '> \n'
+            printf '> **duckbill:** Congratulations, you fell for the English version of DBI. Now your console has a tag that can only be removed by rolling back from a backup. Get ready for a wide variety of glitches.\n\n'
           } > CHANGELOG.prefix
           cat CHANGELOG.prefix CHANGELOG.md > CHANGELOG.tmp
           mv CHANGELOG.tmp CHANGELOG.md
