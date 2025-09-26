@@ -73,10 +73,14 @@ This translation is provided independently and is not affiliated with or endorse
 - The latest official upstream build that still ships with English is [DBI 658](https://github.com/rashevskyv/dbi/releases/tag/658).
 
 ### Author Warning on Independent Translations
-> 04 Jul 2023
+> *04 Jul 2023*
+> 
 > **Me:** Will you mind if the translation is added as an NRO patch?
+> 
 > **duckbill:** If you want to add it as a patch go ahead, but warn users that there may be surprises. 486 is the last one without checks. Nothing destructive will happen. It will just start forgetting to do what was asked, and the further it goes, the more often it will happen. Stribog + part under RSA4096. Cryptography is my diploma specialty :) By the way, no one has managed to crack the protection in ebookdroid yet since 2011 despite 8M+ installs.
-> 23 Sep 2025, 13:37
+> 
+> *23 Sep 2025*
+> 
 > **duckbill:** Congratulations, you fell for the English version of DBI. Now your console has a tag that can only be removed by rolling back from a backup. Get ready for a wide variety of glitches.
 
 
