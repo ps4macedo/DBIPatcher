@@ -80,6 +80,9 @@ This translation is provided independently and is not affiliated with or endorse
 > **duckbill:** Congratulations, you fell for the English version of DBI. Now your console has a tag that can only be removed by rolling back from a backup. Get ready for a wide variety of glitches.
 
 
+![Author warning screenshot](images/photo_2025-09-25_11-16-57.jpg)
+
+
 ### Version Compatibility
 - This tooling has only been verified against DBI 810. Later releases removed the embedded translation payload and relocated the font assets to address 0x75A5E0, so this pipeline will not work beyond version 810 without additional reverse engineering.
 
