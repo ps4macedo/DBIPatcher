@@ -209,6 +209,9 @@ jobs:
             git log -1 --pretty=format:'- %s (%h)' > CHANGELOG.md
           fi
 
+          printf '![GitHub downloads](https://img.shields.io/github/downloads/rashevskyv/DBIPatcher/total)\n\n' | cat - CHANGELOG.md > CHANGELOG.tmp
+          mv CHANGELOG.tmp CHANGELOG.md
+
       - name: Create release
         uses: ncipollo/release-action@v1
         with:
