@@ -209,7 +209,8 @@ jobs:
             git log -1 --pretty=format:'- %s (%h)' > CHANGELOG.md
           fi
 
-          printf '![GitHub downloads](https://img.shields.io/github/downloads/rashevskyv/DBIPatcher/total)\n\n' | cat - CHANGELOG.md > CHANGELOG.tmp
+          TAG_NAME=${{ steps.meta.outputs.tag }}
+          printf "![GitHub release (tag)](https://img.shields.io/github/downloads/rashevskyv/DBIPatcher/${TAG_NAME}/total)\n\n" | cat - CHANGELOG.md > CHANGELOG.tmp
           mv CHANGELOG.tmp CHANGELOG.md
 
       - name: Create release

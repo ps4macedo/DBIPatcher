@@ -14,6 +14,7 @@
 
 - GitHub Actions runs the translation build for every push and pull request using the same Make targets as local builds. Successful pushes automatically publish a release containing the raw `.nro` artifacts per language alongside a short-hash changelog.
 - To add a new language, fork the repo, drop a `translate/rec6.<lang>.txt` file with your translation, and open a pull request. The workflow will validate the patch and surface the resulting `.nro` for review.
+- Current translation files were bootstrapped via neural-machine translation; pull requests with manual fixes are highly encouraged.
 
 
 
