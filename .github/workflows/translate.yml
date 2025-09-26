@@ -3,7 +3,19 @@ on:
   push:
     branches:
       - '**'
+    paths-ignore:
+      - '**/*.md'
+      - LICENSE
+      - .gitignore
+      - .gitattributes
+      - dbipatcher.log
   pull_request:
+    paths-ignore:
+      - '**/*.md'
+      - LICENSE
+      - .gitignore
+      - .gitattributes
+      - dbipatcher.log
   workflow_dispatch:
 permissions:
   contents: write
