@@ -67,6 +67,17 @@ Everything should be hopefuly clear from code. AI-generated generic readme follo
 ### Author Controversy
 This translation is provided independently and is not affiliated with or endorsed by the original DBI author. Users should be aware of ongoing community discussions regarding the original software and make informed decisions about its use.
 
+### Official Release Info
+- The latest official upstream build that still ships with English is [DBI 658](https://github.com/rashevskyv/dbi/releases/tag/658).
+
+### Author Warning on Independent Translations
+> 04 Jul 2023
+> **Me:** Will you mind if the translation is added as an NRO patch?
+> **duckbill:** If you want to add it as a patch go ahead, but warn users that there may be surprises. 486 is the last one without checks. Nothing destructive will happen. It will just start forgetting to do what was asked, and the further it goes, the more often it will happen. Stribog + part under RSA4096. Cryptography is my diploma specialty :) By the way, no one has managed to crack the protection in ebookdroid yet since 2011 despite 8M+ installs.
+
+### Version Compatibility
+- This tooling has only been verified against DBI 810. Later releases removed the embedded translation payload and relocated the font assets to address 0x75A5E0, so this pipeline will not work beyond version 810 without additional reverse engineering.
+
 ### Backup Your Console
 **Before using any homebrew software, create a complete backup of your console:**
 - NAND backup
