@@ -3,7 +3,7 @@
 - Add the target language you want to translate into as **rec6.`target_lang`.txt** and set `ver` and `target_lang` in the config.txt file.
   - Set `target_lang=all` to build patches for every `translate/rec6.*.txt` except Russian; each run produces one artifact per language.
   - GitHub Actions now publishes a release per push with all artifacts attached and an auto-generated changelog using the short commit hash.
-  - Для української локалізації під час збірки автоматично патчиться шрифт `font/0x7555E0_bundle.ttf` за допомогою `mirror_glyph.py`/`patch_font.py` (потрібні `python3` та пакет `zstandard`).
+  - Ukrainian glyph mirroring uses `font/0x7555E0_bundle.ttf`; regenerate it with `font/mirror_glyph.py` and `font/patch_font.py` (requires `python3` and the `zstandard` module).
   - Placeholders in the original and translated strings must match.
   - Please ensure that the total compressed size does not exceed **`14,863 bytes`**.
     - In the Actions tab, check the build & Patch job to see the compression size of rec6.bin. (e.g. patched 11769 B/ 14863 B)
