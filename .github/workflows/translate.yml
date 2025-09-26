@@ -204,15 +204,17 @@ jobs:
           else
             RANGE="HEAD^..HEAD"
           fi
-          git log "$RANGE" --pretty=format:'- %s (%h)' > CHANGELOG.md || true
-          if ! [ -s CHANGELOG.md ]; then
-            git log -1 --pretty=format:'- %s (%h)' > CHANGELOG.md
+          git log "$RANGE" --pretty=format:'- %s (%h)' > CHANGELOG.log || true
+          if ! [ -s CHANGELOG.log ]; then
+            git log -1 --pretty=format:'- %s (%h)' > CHANGELOG.log
           fi
 
           TAG_NAME=${{ steps.meta.outputs.tag }}
           {
             printf '![GitHub release (tag)](https://img.shields.io/github/downloads/rashevskyv/DBIPatcher/%s/total)\n\n' "$TAG_NAME"
-            printf '### Author Warning on Independent Translations\n\n'
+            printf '### Changelog\n\n'
+            cat CHANGELOG.log
+            printf '\n\n### Author Warning on Independent Translations\n\n'
             printf '> *04 Jul 2023*\n'
             printf '> \n'
             printf '> **Me:** Will you mind if the translation is added as an NRO patch?\n'
@@ -221,12 +223,11 @@ jobs:
             printf '> *23 Sep 2025*\n'
             printf '> \n'
             printf '> **duckbill:** Congratulations, you fell for the English version of DBI. Now your console has a tag that can only be removed by rolling back from a backup. Get ready for a wide variety of glitches.\n\n'
-          } > CHANGELOG.prefix
-          cat CHANGELOG.prefix CHANGELOG.md > CHANGELOG.tmp
-          mv CHANGELOG.tmp CHANGELOG.md
-          rm CHANGELOG.prefix
+          } > CHANGELOG.md
+          rm CHANGELOG.log
 
       - name: Create release
+        if: ${{ env.ACT != 'true' }}
         uses: ncipollo/release-action@v1
         with:
           tag: ${{ steps.meta.outputs.tag }}
@@ -235,3 +236,5 @@ jobs:
           artifacts: dist/*.nro
           artifactErrorsFailBuild: true
           allowUpdates: true
+          makeLatest: true
+          dryRun: ${{ env.ACT }}
