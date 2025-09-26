@@ -96,6 +96,14 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y build-essential zstd libzstd-dev
 
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-v1
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
       - name: Install Python deps
         run: |
           python3 -m pip install --upgrade pip
@@ -106,6 +114,8 @@ jobs:
 
       - name: Prepare artifact
         run: |
+          set -euo pipefail
+          rm -rf artifacts
           mkdir -p artifacts
           cp out/dbi/DBI.${DBI_VER}.${DBI_TARGET}.nro artifacts/
 
@@ -146,6 +156,9 @@ jobs:
           from pathlib import Path
 
           dist = Path("dist")
+          if not dist.exists():
+              print("::error::Downloaded artifacts directory not found", file=sys.stderr)
+              sys.exit(1)
           files = list(dist.rglob("*.nro"))
           if not files:
               print("::error::No .nro files found in dist", file=sys.stderr)

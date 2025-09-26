@@ -7,7 +7,14 @@
   - Placeholders in the original and translated strings must match.
   - Please ensure that the total compressed size does not exceed **`14,863 bytes`**.
     - In the Actions tab, check the build & Patch job to see the compression size of rec6.bin. (e.g. patched 11769 B/ 14863 B)
-- Check the **Actions tab** to download the output file (DBI_lang.zip).
+- Check the **Actions** tab to download the raw `DBI.<lang>.nro` artifact.
+
+## Continuous Integration
+
+- GitHub Actions runs the translation build for every push and pull request using the same Make targets as local builds. Successful pushes automatically publish a release containing the raw `.nro` artifacts per language alongside a short-hash changelog.
+- To add a new language, fork the repo, drop a `translate/rec6.<lang>.txt` file with your translation, and open a pull request. The workflow will validate the patch and surface the resulting `.nro` for review.
+
+
 
 ## Version `target_lang` values
 
