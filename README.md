@@ -1,4 +1,5 @@
 # How to build?
+![GitHub release (latest by date)](https://img.shields.io/github/downloads/rashevskyv/DBIPatcher/dbi-810/total)
 - Add the latest Russian version NRO file to the dbi folder as **`DBI.ver.base_lang.nro`**.
 - Add the target language you want to translate into as **rec6.`target_lang`.txt** and set `ver` and `target_lang` in the config.txt file.
   - Set `target_lang=all` to build patches for every `translate/rec6.*.txt` except Russian; each run produces one artifact per language.
