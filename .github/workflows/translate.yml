@@ -157,7 +157,7 @@ except Exception: pass" "$IN" "$OUT" || true
                 ./bin/dbipatcher --convert "$OUT" --output "debug_rec/rec${i}.${mode}.ru.txt" \
                   >"debug_rec/rec${i}.${mode}.convert.log" 2>&1 || true
               fi
-            done
+          done
           done
 
       - name: Upload rec probe
@@ -166,7 +166,7 @@ except Exception: pass" "$IN" "$OUT" || true
           name: rec_probe_${{ matrix.target }}
           path: debug_rec/**
           if-no-files-found: warn
-
+    
       # ======== AUTO-DETECT + TRANSLATE ========
       - name: Detect & translate (auto-detect REC)
         shell: bash
@@ -191,7 +191,6 @@ except Exception: pass" "$IN" "$OUT" || true
             head -n 20 /tmp/probe_rec*.log || true
             exit 1
           fi
-
           echo "[ajuste] Garantindo translate/rec${DETECTED}.ptbr.txt"
           if [ ! -f "translate/rec${DETECTED}.ptbr.txt" ]; then
             for f in translate/rec*.ptbr.txt; do
@@ -200,10 +199,7 @@ except Exception: pass" "$IN" "$OUT" || true
               break
             done
           fi
-          if [ ! -f "translate/rec${DETECTED}.ptbr.txt" ]; then
-            : > "translate/rec${DETECTED}.ptbr.txt"
-          fi
-
+          [ -f "translate/rec${DETECTED}.ptbr.txt" ] || : > "translate/rec${DETECTED}.ptbr.txt"
           echo "[4/4] Rodando translate com REC=${DETECTED}"
           LANG="${DBI_TARGET}" make translate REC="${DETECTED}"
 
