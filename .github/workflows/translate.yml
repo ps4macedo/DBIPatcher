@@ -25,7 +25,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       CONFIG_FILE: config.txt
-      REC: 5
+      REC: ${{ env.REC }}
     outputs:
       matrix: ${{ steps.prepare-matrix.outputs.matrix }}
       ver: ${{ steps.read-config.outputs.ver }}
@@ -124,9 +124,9 @@ jobs:
 
       - name: Build & Patch
         run: |
-          echo "REC=$REC"
-          LANG="${DBI_TARGET}" make translate
-
+          echo "Usando REC=$REC"
+          REC="$REC" LANG="${DBI_TARGET}" make translate
+          
       - name: Prepare artifact
         run: |
           set -euo pipefail
