@@ -122,10 +122,55 @@ jobs:
           python3 -m pip install --upgrade pip
           python3 -m pip install zstandard
 
-      - name: Build & Patch
+      - name: Build & Patch (auto-detect REC)
+        shell: bash
         run: |
-          echo "Forçando REC=4"
-          REC=4 LANG="${DBI_TARGET}" make translate
+          set -euo pipefail
+      
+          echo "[1/4] Build das ferramentas"
+          make -j
+      
+          echo "[2/4] Extraindo NRO do 821"
+          ./bin/dbipatcher --extract "dbi/DBI.821.ru.nro" --output "/tmp/DBI_821"
+      
+          echo "[3/4] Detectando slot de texto (recX)"
+          DETECTED=""
+          for i in 0 1 2 3 4 5 6 7 8 9; do
+            IN="/tmp/DBI_821/rec${i}.bin"
+            OUT="translate/rec${i}.ru.txt"
+            [[ -f "$IN" ]] || continue
+            rm -f "$OUT"
+            set +e
+            ./bin/dbipatcher --convert "$IN" --output "$OUT" 1>"/tmp/probe_rec${i}.log" 2>&1
+            rc=$?
+            set -e
+            if [[ $rc -eq 0 && -s "$OUT" && grep -q '=".*"' "$OUT" ]]; then
+              echo ">> Texto detectado em rec${i}"
+              DETECTED="$i"
+              break
+            else
+              echo "rec${i}: não é texto (veja /tmp/probe_rec${i}.log)"
+            fi
+          done
+      
+          if [[ -z "$DETECTED" ]]; then
+            echo "::error::Nenhum recX com texto foi detectado. Veja os logs /tmp/probe_rec*.log"
+            exit 1
+          fi
+      
+          echo "[ajuste] Alinhando nome do arquivo de tradução para rec${DETECTED}.ptbr.txt"
+          # se você deixou rec4/rec5/rec6.ptbr.txt, renomeia para o slot detectado
+          for cand in translate/rec{0..9}.ptbr.txt; do
+            if [[ -f "$cand" && "$cand" != "translate/rec${DETECTED}.ptbr.txt" ]]; then
+              mv "$cand" "translate/rec${DETECTED}.ptbr.txt"
+              break
+            fi
+          done
+          # se não existe tradução ainda para o rec detectado, crie um placeholder vazio
+          [[ -f "translate/rec${DETECTED}.ptbr.txt" ]] || touch "translate/rec${DETECTED}.ptbr.txt"
+      
+          echo "[4/4] Rodando translate com REC=${DETECTED}"
+          LANG="${DBI_TARGET}" make translate REC="${DETECTED}"
           
       - name: Prepare artifact
         run: |
