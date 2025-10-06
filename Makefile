@@ -1,3 +1,5 @@
+override REC = 5
+
 CC = gcc
 
 CFLAGS =-std=gnu11 \
