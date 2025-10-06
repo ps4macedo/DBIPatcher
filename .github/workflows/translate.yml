@@ -100,7 +100,7 @@ jobs:
       - name: Install deps
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential zstd libzstd-dev lz4 gzip binutils
+          sudo apt-get install -y build-essential zstd libzstd-dev lz4 gzip
 
       - name: Cache pip
         uses: actions/cache@v4
@@ -115,63 +115,17 @@ jobs:
           python3 -m pip install --upgrade pip
           python3 -m pip install zstandard
 
-      # ======== BUILD + EXTRACT ========
-      - name: Build tools & extract NRO
+      - name: Build & Patch (auto-detect REC)
         shell: bash
         run: |
           set -euo pipefail
+
           echo "[1/4] Build apenas do dbipatcher (sem translate-core)"
           make -j bin/dbipatcher || make -j dbipatcher
+
           echo "[2/4] Extraindo NRO do ${DBI_VER}"
           ./bin/dbipatcher --extract "dbi/DBI.${DBI_VER}.ru.nro" --output "/tmp/DBI_${DBI_VER}"
 
-      # ======== PROBE DOS RECS (dump + tentativas de descompressão + strings) ========
-      - name: Probe rec blobs (dump + try decompress + strings)
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p debug_rec
-          for i in $(seq 0 9); do
-            IN="/tmp/DBI_${DBI_VER}/rec${i}.bin"
-            [ -f "$IN" ] || continue
-            cp "$IN" "debug_rec/rec${i}.bin"
-            head -c 4 "$IN" | od -An -tx1 > "debug_rec/rec${i}.magic.txt" || true
-
-            for mode in raw zstd gzip lz4 zlib; do
-              OUT="debug_rec/rec${i}.${mode}.bin"
-              case "$mode" in
-                raw)  cp "$IN" "$OUT" ;;
-                zstd) zstd -d -c "$IN" > "$OUT" 2>/dev/null || rm -f "$OUT" ;;
-                gzip) gzip -dc    "$IN" > "$OUT" 2>/dev/null || rm -f "$OUT" ;;
-                lz4)  lz4 -d -c   "$IN" > "$OUT" 2>/dev/null || rm -f "$OUT" ;;
-                zlib)
-                  python3 -c "import sys,zlib,pathlib; p=pathlib.Path(sys.argv[1]); b=p.read_bytes(); \
-try: out=zlib.decompress(b); pathlib.Path(sys.argv[2]).write_bytes(out) \
-except Exception: pass" "$IN" "$OUT" || true
-                  [ -s "$OUT" ] || rm -f "$OUT"
-                  ;;
-              esac
-
-              if [ -f "$OUT" ]; then
-                strings -a "$OUT" | head -n 200 > "debug_rec/rec${i}.${mode}.strings.txt" || true
-                ./bin/dbipatcher --convert "$OUT" --output "debug_rec/rec${i}.${mode}.ru.txt" \
-                  >"debug_rec/rec${i}.${mode}.convert.log" 2>&1 || true
-              fi
-          done
-          done
-
-      - name: Upload rec probe
-        uses: actions/upload-artifact@v4
-        with:
-          name: rec_probe_${{ matrix.target }}
-          path: debug_rec/**
-          if-no-files-found: warn
-    
-      # ======== AUTO-DETECT + TRANSLATE ========
-      - name: Detect & translate (auto-detect REC)
-        shell: bash
-        run: |
-          set -euo pipefail
           echo "[3/4] Detectando slot de texto (recX)"
           DETECTED=""
           for i in $(seq 0 9); do
@@ -186,11 +140,13 @@ except Exception: pass" "$IN" "$OUT" || true
               fi
             fi
           done
+
           if [ -z "$DETECTED" ]; then
             echo "::error::Nenhum recX com texto foi detectado."
-            head -n 20 /tmp/probe_rec*.log || true
+            head -n 50 /tmp/probe_rec*.log || true
             exit 1
           fi
+
           echo "[ajuste] Garantindo translate/rec${DETECTED}.ptbr.txt"
           if [ ! -f "translate/rec${DETECTED}.ptbr.txt" ]; then
             for f in translate/rec*.ptbr.txt; do
@@ -200,6 +156,7 @@ except Exception: pass" "$IN" "$OUT" || true
             done
           fi
           [ -f "translate/rec${DETECTED}.ptbr.txt" ] || : > "translate/rec${DETECTED}.ptbr.txt"
+
           echo "[4/4] Rodando translate com REC=${DETECTED}"
           LANG="${DBI_TARGET}" make translate REC="${DETECTED}"
 
