@@ -1,4 +1,4 @@
-override REC = 5
+override REC = 4
 
 CC = gcc
 
