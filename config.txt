@@ -1,3 +1,2 @@
-ver=810
-base_lang=ru
-target_lang=all
+ver=821
+target_lang=ptbr
