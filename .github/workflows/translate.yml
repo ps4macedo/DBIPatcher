@@ -1,5 +1,4 @@
 name: Build (translate)
-
 on:
   push:
     branches:
@@ -18,7 +17,6 @@ on:
       - .gitattributes
       - dbipatcher.log
   workflow_dispatch:
-
 permissions:
   contents: write
 
@@ -37,11 +35,10 @@ jobs:
       - id: read-config
         name: Read config
         run: |
-          set -euo pipefail
           TARGET=$(awk -F= '/^[[:space:]]*target_lang[[:space:]]*=/{gsub(/^[ \t]+|[ \t]+$/,"",$2);print $2}' "${CONFIG_FILE}" 2>/dev/null | tr -d '\r')
           VER=$(awk -F= '/^[[:space:]]*ver[[:space:]]*=/{gsub(/^[ \t]+|[ \t]+$/,"",$2);print $2}' "${CONFIG_FILE}" 2>/dev/null | tr -d '\r')
-          [ -n "$TARGET" ] || TARGET="en"
-          [ -n "$VER" ] || VER="810"
+          if [ -z "$TARGET" ]; then TARGET="en"; fi
+          if [ -z "$VER" ]; then VER="810"; fi
           echo "target=$TARGET" >> "$GITHUB_OUTPUT"
           echo "ver=$VER" >> "$GITHUB_OUTPUT"
 
@@ -51,13 +48,20 @@ jobs:
           TARGET_VAL: ${{ steps.read-config.outputs.target }}
         run: |
           python3 - <<'PY' >> "$GITHUB_OUTPUT"
-          import glob, json, os, sys
-          target = (os.environ.get("TARGET_VAL") or "").strip() or "en"
+          import glob
+          import json
+          import os
+          import sys
+
+          target = os.environ.get("TARGET_VAL", "").strip()
+          if not target:
+              target = "en"
+
           include = []
           if target.lower() == "all":
-              files = sorted(glob.glob("translate/rec*.txt"))
+              files = sorted(glob.glob("translate/rec6.*.txt"))
               if not files:
-                  print("::error::No translation files found in translate/rec*.txt", file=sys.stderr)
+                  print("::error::No translation files found in translate/rec6.*.txt", file=sys.stderr)
                   sys.exit(1)
               seen = set()
               for path in files:
@@ -77,9 +81,11 @@ jobs:
                   print("::warning::target_lang=ru skipped because base language is already Russian", file=sys.stderr)
               else:
                   include.append({"target": target})
+
           if not include:
               print("::error::No target languages resolved from configuration", file=sys.stderr)
               sys.exit(1)
+
           print(f"matrix={json.dumps({'include': include})}")
           PY
 
@@ -100,7 +106,7 @@ jobs:
       - name: Install deps
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential zstd libzstd-dev lz4 gzip
+          sudo apt-get install -y build-essential zstd libzstd-dev
 
       - name: Cache pip
         uses: actions/cache@v4
@@ -115,50 +121,8 @@ jobs:
           python3 -m pip install --upgrade pip
           python3 -m pip install zstandard
 
-      - name: Build & Patch (auto-detect REC)
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          echo "[1/4] Build apenas do dbipatcher (sem translate-core)"
-          make -j bin/dbipatcher || make -j dbipatcher
-
-          echo "[2/4] Extraindo NRO do ${DBI_VER}"
-          ./bin/dbipatcher --extract "dbi/DBI.${DBI_VER}.ru.nro" --output "/tmp/DBI_${DBI_VER}"
-
-          echo "[3/4] Detectando slot de texto (recX)"
-          DETECTED=""
-          for i in $(seq 0 9); do
-            IN="/tmp/DBI_${DBI_VER}/rec${i}.bin"
-            OUT="translate/rec${i}.ru.txt"
-            [ -f "$IN" ] || continue
-            rm -f "$OUT"
-            if ./bin/dbipatcher --convert "$IN" --output "$OUT" >"/tmp/probe_rec${i}.log" 2>&1; then
-              if [ -s "$OUT" ] && grep -qE '^[A-Za-z0-9_]+\s*=' "$OUT"; then
-                echo ">> Texto detectado em rec${i}"
-                DETECTED="$i"; break
-              fi
-            fi
-          done
-
-          if [ -z "$DETECTED" ]; then
-            echo "::error::Nenhum recX com texto foi detectado."
-            head -n 50 /tmp/probe_rec*.log || true
-            exit 1
-          fi
-
-          echo "[ajuste] Garantindo translate/rec${DETECTED}.ptbr.txt"
-          if [ ! -f "translate/rec${DETECTED}.ptbr.txt" ]; then
-            for f in translate/rec*.ptbr.txt; do
-              [ -e "$f" ] || continue
-              mv "$f" "translate/rec${DETECTED}.ptbr.txt"
-              break
-            done
-          fi
-          [ -f "translate/rec${DETECTED}.ptbr.txt" ] || : > "translate/rec${DETECTED}.ptbr.txt"
-
-          echo "[4/4] Rodando translate com REC=${DETECTED}"
-          LANG="${DBI_TARGET}" make translate REC="${DETECTED}"
+      - name: Build & Patch
+        run: LANG="${DBI_TARGET}" make translate
 
       - name: Prepare artifact
         run: |
@@ -176,7 +140,9 @@ jobs:
           retention-days: 7
 
   release:
-    needs: [prepare, build]
+    needs:
+      - prepare
+      - build
     if: ${{ github.event_name != 'pull_request' }}
     runs-on: ubuntu-latest
     env:
@@ -197,18 +163,26 @@ jobs:
       - name: Flatten artifacts
         run: |
           python3 - <<'PY'
-          import shutil, sys
+          import shutil
+          import sys
           from pathlib import Path
+
           dist = Path("dist")
           if not dist.exists():
-              print("::error::Downloaded artifacts directory not found", file=sys.stderr); sys.exit(1)
+              print("::error::Downloaded artifacts directory not found", file=sys.stderr)
+              sys.exit(1)
           files = list(dist.rglob("*.nro"))
           if not files:
-              print("::error::No .nro files found in dist", file=sys.stderr); sys.exit(1)
+              print("::error::No .nro files found in dist", file=sys.stderr)
+              sys.exit(1)
+
           tmp = Path("dist_flat")
-          if tmp.exists(): shutil.rmtree(tmp)
+          if tmp.exists():
+              shutil.rmtree(tmp)
           tmp.mkdir(parents=True, exist_ok=True)
-          for f in files: shutil.copy2(f, tmp / f.name)
+          for file in files:
+              shutil.copy2(file, tmp / file.name)
+
           shutil.rmtree(dist)
           tmp.rename(dist)
           PY
@@ -219,25 +193,41 @@ jobs:
           SHORT_SHA=${GITHUB_SHA::7}
           TAG="dbi-${DBI_VER}-${SHORT_SHA}"
           NAME="DBI ${DBI_VER} (${SHORT_SHA})"
-          printf 'tag=%s\n' "$TAG"  >> "$GITHUB_OUTPUT"
+          printf 'tag=%s\n' "$TAG" >> "$GITHUB_OUTPUT"
           printf 'name=%s\n' "$NAME" >> "$GITHUB_OUTPUT"
 
       - name: Generate changelog
         run: |
           LAST_TAG=$(git describe --tags --match 'dbi-*' --abbrev=0 2>/dev/null || echo '')
-          if [ -n "$LAST_TAG" ]; then RANGE="$LAST_TAG..HEAD"; else RANGE="HEAD^..HEAD"; fi
+          if [ -n "$LAST_TAG" ]; then
+            RANGE="$LAST_TAG..HEAD"
+          else
+            RANGE="HEAD^..HEAD"
+          fi
           git log "$RANGE" --pretty=format:'- %s (%h)' > CHANGELOG.log || true
-          [ -s CHANGELOG.log ] || git log -1 --pretty=format:'- %s (%h)' > CHANGELOG.log
+          if ! [ -s CHANGELOG.log ]; then
+            git log -1 --pretty=format:'- %s (%h)' > CHANGELOG.log
+          fi
+
           TAG_NAME=${{ steps.meta.outputs.tag }}
           {
             printf '![GitHub release (tag)](https://img.shields.io/github/downloads/rashevskyv/DBIPatcher/%s/total)\n\n' "$TAG_NAME"
             printf '### Changelog\n\n'
             cat CHANGELOG.log
-            printf '\n'
+            printf '\n\n### Author Warning on Independent Translations\n\n'
+            printf '> *04 Jul 2023*\n'
+            printf '> \n'
+            printf '> **Me:** Will you mind if the translation is added as an NRO patch?\n'
+            printf '> \n'
+            printf '> **duckbill:** If you want to add it as a patch go ahead, but warn users that there may be surprises. 486 is the last one without checks. Nothing destructive will happen. It will just start forgetting to do what was asked, and the further it goes, the more often it will happen. Stribog + part under RSA4096. Cryptography is my diploma specialty :) By the way, no one has managed to crack the protection in ebookdroid yet since 2011 despite 8M+ installs.\n\n'
+            printf '> *23 Sep 2025*\n'
+            printf '> \n'
+            printf '> **duckbill:** Congratulations, you fell for the English version of DBI. Now your console has a tag that can only be removed by rolling back from a backup. Get ready for a wide variety of glitches.\n\n'
           } > CHANGELOG.md
-          rm -f CHANGELOG.log
+          rm CHANGELOG.log
 
       - name: Create release
+        if: ${{ env.ACT != 'true' }}
         uses: ncipollo/release-action@v1
         with:
           tag: ${{ steps.meta.outputs.tag }}
@@ -247,3 +237,4 @@ jobs:
           artifactErrorsFailBuild: true
           allowUpdates: true
           makeLatest: true
+          dryRun: ${{ env.ACT }}
