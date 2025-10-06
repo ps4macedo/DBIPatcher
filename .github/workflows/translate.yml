@@ -39,10 +39,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          TARGET=$(awk -F= '/^[[:space:]]*target_lang[[:space:]]*=/{gsub(/^[ 	]+|[ 	]+$/,"",$2);print $2}' "${CONFIG_FILE}" 2>/dev/null | tr -d '
-')
-          VER=$(awk -F= '/^[[:space:]]*ver[[:space:]]*=/{gsub(/^[ 	]+|[ 	]+$/,"",$2);print $2}' "${CONFIG_FILE}" 2>/dev/null | tr -d '
-')
+          TARGET=$(awk -F= '/^[[:space:]]*target_lang[[:space:]]*=/{gsub(/^[ 	]+|[ 	]+$/,"",$2);print $2}' "${CONFIG_FILE}" 2>/dev/null | tr -d '')
+          VER=$(awk -F= '/^[[:space:]]*ver[[:space:]]*=/{gsub(/^[ 	]+|[ 	]+$/,"",$2);print $2}' "${CONFIG_FILE}" 2>/dev/null | tr -d '')
           [ -n "$TARGET" ] || TARGET="en"
           [ -n "$VER" ] || VER="821"
           echo "target=$TARGET" >> "$GITHUB_OUTPUT"
