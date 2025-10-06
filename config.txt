@@ -1,4 +1,3 @@
 ver=821
 base_lang=ru
 target_lang=ptbr
-rec=4
