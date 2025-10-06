@@ -1,240 +1,107 @@
-name: Build (translate)
+name: DBI 821 Probe
+
 on:
-  push:
-    branches:
-      - '**'
-    paths-ignore:
-      - '**/*.md'
-      - LICENSE
-      - .gitignore
-      - .gitattributes
-      - dbipatcher.log
-  pull_request:
-    paths-ignore:
-      - '**/*.md'
-      - LICENSE
-      - .gitignore
-      - .gitattributes
-      - dbipatcher.log
   workflow_dispatch:
+
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  prepare:
+  probe:
     runs-on: ubuntu-latest
     env:
-      CONFIG_FILE: config.txt
-    outputs:
-      matrix: ${{ steps.prepare-matrix.outputs.matrix }}
-      ver: ${{ steps.read-config.outputs.ver }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - id: read-config
-        name: Read config
-        run: |
-          TARGET=$(awk -F= '/^[[:space:]]*target_lang[[:space:]]*=/{gsub(/^[ \t]+|[ \t]+$/,"",$2);print $2}' "${CONFIG_FILE}" 2>/dev/null | tr -d '\r')
-          VER=$(awk -F= '/^[[:space:]]*ver[[:space:]]*=/{gsub(/^[ \t]+|[ \t]+$/,"",$2);print $2}' "${CONFIG_FILE}" 2>/dev/null | tr -d '\r')
-          if [ -z "$TARGET" ]; then TARGET="en"; fi
-          if [ -z "$VER" ]; then VER="810"; fi
-          echo "target=$TARGET" >> "$GITHUB_OUTPUT"
-          echo "ver=$VER" >> "$GITHUB_OUTPUT"
-
-      - id: prepare-matrix
-        name: Prepare matrix
-        env:
-          TARGET_VAL: ${{ steps.read-config.outputs.target }}
-        run: |
-          python3 - <<'PY' >> "$GITHUB_OUTPUT"
-          import glob
-          import json
-          import os
-          import sys
-
-          target = os.environ.get("TARGET_VAL", "").strip()
-          if not target:
-              target = "en"
-
-          include = []
-          if target.lower() == "all":
-              files = sorted(glob.glob("translate/rec6.*.txt"))
-              if not files:
-                  print("::error::No translation files found in translate/rec6.*.txt", file=sys.stderr)
-                  sys.exit(1)
-              seen = set()
-              for path in files:
-                  base = os.path.basename(path)
-                  parts = base.split(".")
-                  if len(parts) < 3:
-                      continue
-                  lang = ".".join(parts[1:-1]).strip()
-                  if not lang or lang.lower() == "ru":
-                      continue
-                  if lang in seen:
-                      continue
-                  seen.add(lang)
-                  include.append({"target": lang})
-          else:
-              if target.lower() == "ru":
-                  print("::warning::target_lang=ru skipped because base language is already Russian", file=sys.stderr)
-              else:
-                  include.append({"target": target})
-
-          if not include:
-              print("::error::No target languages resolved from configuration", file=sys.stderr)
-              sys.exit(1)
-
-          print(f"matrix={json.dumps({'include': include})}")
-          PY
-
-  build:
-    needs: prepare
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix: ${{ fromJSON(needs.prepare.outputs.matrix) }}
-    env:
-      CONFIG_FILE: config.txt
-      DBI_VER: ${{ needs.prepare.outputs.ver }}
-      DBI_TARGET: ${{ matrix.target }}
+      DBI_VER: 821
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
       - name: Install deps
+        shell: bash
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential zstd libzstd-dev
-
-      - name: Cache pip
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-v1
-          restore-keys: |
-            ${{ runner.os }}-pip-
-
-      - name: Install Python deps
-        run: |
+          sudo apt-get install -y build-essential zstd libzstd-dev lz4 gzip binutils
           python3 -m pip install --upgrade pip
           python3 -m pip install zstandard
 
-      - name: Build & Patch
-        run: LANG="${DBI_TARGET}" make translate
-
-      - name: Prepare artifact
+      - name: Build dbipatcher
+        shell: bash
         run: |
           set -euo pipefail
-          rm -rf artifacts
-          mkdir -p artifacts
-          cp out/dbi/DBI.${DBI_VER}.${DBI_TARGET}.nro artifacts/
+          make -j bin/dbipatcher || make -j dbipatcher || true
 
-      - name: Upload artifact (DBI.zip contains only the NRO)
+      - name: Extract NRO
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ ! -f "dbi/DBI.${DBI_VER}.ru.nro" ]; then
+            echo "::error file=dbi/DBI.${DBI_VER}.ru.nro::Arquivo do NRO não encontrado"
+            ls -la dbi || true
+            exit 1
+          fi
+          ./bin/dbipatcher --extract "dbi/DBI.${DBI_VER}.ru.nro" --output "/tmp/DBI_${DBI_VER}" || true
+          ls -la "/tmp/DBI_${DBI_VER}" || true
+
+      - name: Probe rec blobs (dump + try decompress + strings)
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p debug_rec
+          for i in $(seq 0 9); do
+            IN="/tmp/DBI_${DBI_VER}/rec${i}.bin"
+            [ -f "$IN" ] || continue
+            cp "$IN" "debug_rec/rec${i}.bin"
+            head -c 16 "$IN" | od -An -tx1 > "debug_rec/rec${i}.magic.txt" || true
+            for mode in raw zstd gzip lz4 zlib zlibraw deflate; do
+              OUT="debug_rec/rec${i}.${mode}.bin"
+              case "$mode" in
+                raw) cp "$IN" "$OUT" ;;
+                zstd) zstd -q -d -c "$IN" > "$OUT" 2>/dev/null || rm -f "$OUT" ;;
+                gzip) gzip -q -dc "$IN" > "$OUT" 2>/dev/null || rm -f "$OUT" ;;
+                lz4)  lz4 -q -d -c "$IN" > "$OUT" 2>/dev/null || rm -f "$OUT" ;;
+                zlib)
+                  python3 - <<'PY' "$IN" "$OUT" || true
+import sys, zlib, pathlib
+p=pathlib.Path(sys.argv[1]).read_bytes()
+try:
+  out=zlib.decompress(p); pathlib.Path(sys.argv[2]).write_bytes(out)
+except Exception: pass
+PY
+                  [ -s "$OUT" ] || rm -f "$OUT"
+                  ;;
+                zlibraw)
+                  python3 - <<'PY' "$IN" "$OUT" || true
+import sys, zlib, pathlib
+p=pathlib.Path(sys.argv[1]).read_bytes()
+ok=False
+for w in (-15,-14,-13,-12):
+  try:
+    out=zlib.decompress(p,wbits=w); pathlib.Path(sys.argv[2]).write_bytes(out); ok=True; break
+  except Exception: pass
+PY
+                  [ -s "$OUT" ] || rm -f "$OUT"
+                  ;;
+                deflate)
+                  python3 - <<'PY' "$IN" "$OUT" || true
+import sys, zlib, pathlib
+p=pathlib.Path(sys.argv[1]).read_bytes()
+try:
+  d=zlib.decompressobj(-zlib.MAX_WBITS)
+  out=d.decompress(p)+d.flush()
+  pathlib.Path(sys.argv[2]).write_bytes(out)
+except Exception: pass
+PY
+                  [ -s "$OUT" ] || rm -f "$OUT"
+                  ;;
+              esac
+              if [ -f "$OUT" ]; then
+                strings -a -n 3 "$OUT" | head -n 200 > "debug_rec/rec${i}.${mode}.strings.txt" || true
+              fi
+            done
+          done
+
+      - name: Upload probe artifact
         uses: actions/upload-artifact@v4
         with:
-          name: DBI_${{ matrix.target }}
-          path: artifacts/DBI.${{ env.DBI_VER }}.${{ matrix.target }}.nro
-          if-no-files-found: error
-          retention-days: 7
-
-  release:
-    needs:
-      - prepare
-      - build
-    if: ${{ github.event_name != 'pull_request' }}
-    runs-on: ubuntu-latest
-    env:
-      DBI_VER: ${{ needs.prepare.outputs.ver }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Download artifacts
-        uses: actions/download-artifact@v4
-        with:
-          path: dist
-          pattern: DBI_*
-          merge-multiple: true
-
-      - name: Flatten artifacts
-        run: |
-          python3 - <<'PY'
-          import shutil
-          import sys
-          from pathlib import Path
-
-          dist = Path("dist")
-          if not dist.exists():
-              print("::error::Downloaded artifacts directory not found", file=sys.stderr)
-              sys.exit(1)
-          files = list(dist.rglob("*.nro"))
-          if not files:
-              print("::error::No .nro files found in dist", file=sys.stderr)
-              sys.exit(1)
-
-          tmp = Path("dist_flat")
-          if tmp.exists():
-              shutil.rmtree(tmp)
-          tmp.mkdir(parents=True, exist_ok=True)
-          for file in files:
-              shutil.copy2(file, tmp / file.name)
-
-          shutil.rmtree(dist)
-          tmp.rename(dist)
-          PY
-
-      - name: Prepare release metadata
-        id: meta
-        run: |
-          SHORT_SHA=${GITHUB_SHA::7}
-          TAG="dbi-${DBI_VER}-${SHORT_SHA}"
-          NAME="DBI ${DBI_VER} (${SHORT_SHA})"
-          printf 'tag=%s\n' "$TAG" >> "$GITHUB_OUTPUT"
-          printf 'name=%s\n' "$NAME" >> "$GITHUB_OUTPUT"
-
-      - name: Generate changelog
-        run: |
-          LAST_TAG=$(git describe --tags --match 'dbi-*' --abbrev=0 2>/dev/null || echo '')
-          if [ -n "$LAST_TAG" ]; then
-            RANGE="$LAST_TAG..HEAD"
-          else
-            RANGE="HEAD^..HEAD"
-          fi
-          git log "$RANGE" --pretty=format:'- %s (%h)' > CHANGELOG.log || true
-          if ! [ -s CHANGELOG.log ]; then
-            git log -1 --pretty=format:'- %s (%h)' > CHANGELOG.log
-          fi
-
-          TAG_NAME=${{ steps.meta.outputs.tag }}
-          {
-            printf '![GitHub release (tag)](https://img.shields.io/github/downloads/rashevskyv/DBIPatcher/%s/total)\n\n' "$TAG_NAME"
-            printf '### Changelog\n\n'
-            cat CHANGELOG.log
-            printf '\n\n### Author Warning on Independent Translations\n\n'
-            printf '> *04 Jul 2023*\n'
-            printf '> \n'
-            printf '> **Me:** Will you mind if the translation is added as an NRO patch?\n'
-            printf '> \n'
-            printf '> **duckbill:** If you want to add it as a patch go ahead, but warn users that there may be surprises. 486 is the last one without checks. Nothing destructive will happen. It will just start forgetting to do what was asked, and the further it goes, the more often it will happen. Stribog + part under RSA4096. Cryptography is my diploma specialty :) By the way, no one has managed to crack the protection in ebookdroid yet since 2011 despite 8M+ installs.\n\n'
-            printf '> *23 Sep 2025*\n'
-            printf '> \n'
-            printf '> **duckbill:** Congratulations, you fell for the English version of DBI. Now your console has a tag that can only be removed by rolling back from a backup. Get ready for a wide variety of glitches.\n\n'
-          } > CHANGELOG.md
-          rm CHANGELOG.log
-
-      - name: Create release
-        if: ${{ env.ACT != 'true' }}
-        uses: ncipollo/release-action@v1
-        with:
-          tag: ${{ steps.meta.outputs.tag }}
-          name: ${{ steps.meta.outputs.name }}
-          bodyFile: CHANGELOG.md
-          artifacts: dist/*.nro
-          artifactErrorsFailBuild: true
-          allowUpdates: true
-          makeLatest: true
-          dryRun: ${{ env.ACT }}
+          name: rec_probe
+          path: debug_rec/**
+          if-no-files-found: warn
