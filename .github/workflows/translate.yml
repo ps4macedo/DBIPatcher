@@ -122,7 +122,7 @@ jobs:
           python3 -m pip install zstandard
 
       - name: Build & Patch
-        run: LANG="${DBI_TARGET}" make translate REC=5
+        run: LANG="${DBI_TARGET}" make translate rec=5
 
       - name: Prepare artifact
         run: |
