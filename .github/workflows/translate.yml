@@ -25,7 +25,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       CONFIG_FILE: config.txt
-      REC: 5
+      REC: 4
     outputs:
       matrix: ${{ steps.prepare-matrix.outputs.matrix }}
       ver: ${{ steps.read-config.outputs.ver }}
@@ -124,8 +124,8 @@ jobs:
 
       - name: Build & Patch
         run: |
-          echo "Forçando REC=5"
-          REC=5 LANG="${DBI_TARGET}" make translate
+          echo "Forçando REC=4"
+          REC=4 LANG="${DBI_TARGET}" make translate
           
       - name: Prepare artifact
         run: |
