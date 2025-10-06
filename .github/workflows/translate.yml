@@ -135,39 +135,39 @@ jobs:
       
           echo "[3/4] Detectando slot de texto (recX)"
           DETECTED=""
-          for i in {0..9}; do
+          for i in $(seq 0 9); do
             IN="/tmp/DBI_${DBI_VER}/rec${i}.bin"
             OUT="translate/rec${i}.ru.txt"
-            [[ -f "$IN" ]] || continue
+            if [ ! -f "$IN" ]; then
+              continue
+            fi
             rm -f "$OUT"
-            set +e
-            ./bin/dbipatcher --convert "$IN" --output "$OUT" >"/tmp/probe_rec${i}.log" 2>&1
-            rc=$?
-            set -e
-            # considera válido se gerou arquivo com linhas no formato CHAVE=VALOR
-            if [[ $rc -eq 0 && -s "$OUT" && grep -qE '^[A-Za-z0-9_]+\s*=' "$OUT" ]]; then
-              echo ">> Texto detectado em rec${i}"
-              DETECTED="$i"
-              break
-            else
-              echo "rec${i}: não é texto (veja /tmp/probe_rec${i}.log)"
+            if ./bin/dbipatcher --convert "$IN" --output "$OUT" >"/tmp/probe_rec${i}.log" 2>&1; then
+              if [ -s "$OUT" ] && grep -qE '^[A-Za-z0-9_]+\s*=' "$OUT"; then
+                echo ">> Texto detectado em rec${i}"
+                DETECTED="$i"
+                break
+              fi
             fi
           done
       
-          if [[ -z "$DETECTED" ]]; then
-            echo "::error::Nenhum recX com texto foi detectado. Primeiras linhas dos logs de probe:"
+          if [ -z "$DETECTED" ]; then
+            echo "::error::Nenhum recX com texto foi detectado."
             head -n 20 /tmp/probe_rec*.log || true
             exit 1
           fi
       
-          echo "[ajuste] Garantindo arquivo de tradução: translate/rec${DETECTED}.ptbr.txt"
-          # Se você já tem outro rec*.ptbr.txt, renomeia para o detectado; senão cria vazio
-          shopt -s nullglob
-          FOUND=(translate/rec*.ptbr.txt)
-          if [[ ${#FOUND[@]} -gt 0 && ! -f "translate/rec${DETECTED}.ptbr.txt" ]]; then
-            mv "${FOUND[0]}" "translate/rec${DETECTED}.ptbr.txt"
+          echo "[ajuste] Garantindo translate/rec${DETECTED}.ptbr.txt"
+          if [ ! -f "translate/rec${DETECTED}.ptbr.txt" ]; then
+            for f in translate/rec*.ptbr.txt; do
+              [ -e "$f" ] || continue
+              mv "$f" "translate/rec${DETECTED}.ptbr.txt"
+              break
+            done
           fi
-          [[ -f "translate/rec${DETECTED}.ptbr.txt" ]] || : > "translate/rec${DETECTED}.ptbr.txt"
+          if [ ! -f "translate/rec${DETECTED}.ptbr.txt" ]; then
+            : > "translate/rec${DETECTED}.ptbr.txt"
+          fi
       
           echo "[4/4] Rodando translate com REC=${DETECTED}"
           LANG="${DBI_TARGET}" make translate REC="${DETECTED}"
