@@ -122,55 +122,55 @@ jobs:
           python3 -m pip install --upgrade pip
           python3 -m pip install zstandard
 
-      - name: Build & Patch (auto-detect REC)
-        shell: bash
-        run: |
-          set -euo pipefail
-      
-          echo "[1/4] Build apenas do dbipatcher (sem translate-core)"
-          make -j bin/dbipatcher || make -j dbipatcher
-      
-          echo "[2/4] Extraindo NRO do ${DBI_VER}"
-          ./bin/dbipatcher --extract "dbi/DBI.${DBI_VER}.ru.nro" --output "/tmp/DBI_${DBI_VER}"
-      
-          echo "[3/4] Detectando slot de texto (recX)"
-          DETECTED=""
-          for i in $(seq 0 9); do
-            IN="/tmp/DBI_${DBI_VER}/rec${i}.bin"
-            OUT="translate/rec${i}.ru.txt"
-            if [ ! -f "$IN" ]; then
-              continue
-            fi
-            rm -f "$OUT"
-            if ./bin/dbipatcher --convert "$IN" --output "$OUT" >"/tmp/probe_rec${i}.log" 2>&1; then
-              if [ -s "$OUT" ] && grep -qE '^[A-Za-z0-9_]+\s*=' "$OUT"; then
-                echo ">> Texto detectado em rec${i}"
-                DETECTED="$i"
-                break
+          - name: Build & Patch (auto-detect REC)
+            shell: bash
+            run: |
+              set -euo pipefail
+          
+              echo "[1/4] Build apenas do dbipatcher (sem translate-core)"
+              make -j bin/dbipatcher || make -j dbipatcher
+          
+              echo "[2/4] Extraindo NRO do ${DBI_VER}"
+              ./bin/dbipatcher --extract "dbi/DBI.${DBI_VER}.ru.nro" --output "/tmp/DBI_${DBI_VER}"
+          
+              echo "[3/4] Detectando slot de texto (recX)"
+              DETECTED=""
+              for i in $(seq 0 9); do
+                IN="/tmp/DBI_${DBI_VER}/rec${i}.bin"
+                OUT="translate/rec${i}.ru.txt"
+                if [ ! -f "$IN" ]; then
+                  continue
+                fi
+                rm -f "$OUT"
+                if ./bin/dbipatcher --convert "$IN" --output "$OUT" >"/tmp/probe_rec${i}.log" 2>&1; then
+                  if [ -s "$OUT" ] && grep -qE '^[A-Za-z0-9_]+\s*=' "$OUT"; then
+                    echo ">> Texto detectado em rec${i}"
+                    DETECTED="$i"
+                    break
+                  fi
+                fi
+              done
+          
+              if [ -z "$DETECTED" ]; then
+                echo "::error::Nenhum recX com texto foi detectado."
+                head -n 20 /tmp/probe_rec*.log || true
+                exit 1
               fi
-            fi
-          done
-      
-          if [ -z "$DETECTED" ]; then
-            echo "::error::Nenhum recX com texto foi detectado."
-            head -n 20 /tmp/probe_rec*.log || true
-            exit 1
-          fi
-      
-          echo "[ajuste] Garantindo translate/rec${DETECTED}.ptbr.txt"
-          if [ ! -f "translate/rec${DETECTED}.ptbr.txt" ]; then
-            for f in translate/rec*.ptbr.txt; do
-              [ -e "$f" ] || continue
-              mv "$f" "translate/rec${DETECTED}.ptbr.txt"
-              break
-            done
-          fi
-          if [ ! -f "translate/rec${DETECTED}.ptbr.txt" ]; then
-            : > "translate/rec${DETECTED}.ptbr.txt"
-          fi
-      
-          echo "[4/4] Rodando translate com REC=${DETECTED}"
-          LANG="${DBI_TARGET}" make translate REC="${DETECTED}"
+          
+              echo "[ajuste] Garantindo translate/rec${DETECTED}.ptbr.txt"
+              if [ ! -f "translate/rec${DETECTED}.ptbr.txt" ]; then
+                for f in translate/rec*.ptbr.txt; do
+                  [ -e "$f" ] || continue
+                  mv "$f" "translate/rec${DETECTED}.ptbr.txt"
+                  break
+                done
+              fi
+              if [ ! -f "translate/rec${DETECTED}.ptbr.txt" ]; then
+                : > "translate/rec${DETECTED}.ptbr.txt"
+              fi
+          
+              echo "[4/4] Rodando translate com REC=${DETECTED}"
+              LANG="${DBI_TARGET}" make translate REC="${DETECTED}"
           
       - name: Prepare artifact
         run: |
