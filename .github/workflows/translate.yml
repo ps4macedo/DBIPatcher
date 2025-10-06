@@ -127,24 +127,25 @@ jobs:
         run: |
           set -euo pipefail
       
-          echo "[1/4] Build das ferramentas"
-          make -j
+          echo "[1/4] Build apenas do dbipatcher (sem translate-core)"
+          make -j bin/dbipatcher || make -j dbipatcher
       
-          echo "[2/4] Extraindo NRO do 821"
-          ./bin/dbipatcher --extract "dbi/DBI.821.ru.nro" --output "/tmp/DBI_821"
+          echo "[2/4] Extraindo NRO do ${DBI_VER}"
+          ./bin/dbipatcher --extract "dbi/DBI.${DBI_VER}.ru.nro" --output "/tmp/DBI_${DBI_VER}"
       
           echo "[3/4] Detectando slot de texto (recX)"
           DETECTED=""
-          for i in 0 1 2 3 4 5 6 7 8 9; do
-            IN="/tmp/DBI_821/rec${i}.bin"
+          for i in {0..9}; do
+            IN="/tmp/DBI_${DBI_VER}/rec${i}.bin"
             OUT="translate/rec${i}.ru.txt"
             [[ -f "$IN" ]] || continue
             rm -f "$OUT"
             set +e
-            ./bin/dbipatcher --convert "$IN" --output "$OUT" 1>"/tmp/probe_rec${i}.log" 2>&1
+            ./bin/dbipatcher --convert "$IN" --output "$OUT" >"/tmp/probe_rec${i}.log" 2>&1
             rc=$?
             set -e
-            if [[ $rc -eq 0 && -s "$OUT" && grep -q '=".*"' "$OUT" ]]; then
+            # considera válido se gerou arquivo com linhas no formato CHAVE=VALOR
+            if [[ $rc -eq 0 && -s "$OUT" && grep -qE '^[A-Za-z0-9_]+\s*=' "$OUT" ]]; then
               echo ">> Texto detectado em rec${i}"
               DETECTED="$i"
               break
@@ -154,20 +155,19 @@ jobs:
           done
       
           if [[ -z "$DETECTED" ]]; then
-            echo "::error::Nenhum recX com texto foi detectado. Veja os logs /tmp/probe_rec*.log"
+            echo "::error::Nenhum recX com texto foi detectado. Primeiras linhas dos logs de probe:"
+            head -n 20 /tmp/probe_rec*.log || true
             exit 1
           fi
       
-          echo "[ajuste] Alinhando nome do arquivo de tradução para rec${DETECTED}.ptbr.txt"
-          # se você deixou rec4/rec5/rec6.ptbr.txt, renomeia para o slot detectado
-          for cand in translate/rec{0..9}.ptbr.txt; do
-            if [[ -f "$cand" && "$cand" != "translate/rec${DETECTED}.ptbr.txt" ]]; then
-              mv "$cand" "translate/rec${DETECTED}.ptbr.txt"
-              break
-            fi
-          done
-          # se não existe tradução ainda para o rec detectado, crie um placeholder vazio
-          [[ -f "translate/rec${DETECTED}.ptbr.txt" ]] || touch "translate/rec${DETECTED}.ptbr.txt"
+          echo "[ajuste] Garantindo arquivo de tradução: translate/rec${DETECTED}.ptbr.txt"
+          # Se você já tem outro rec*.ptbr.txt, renomeia para o detectado; senão cria vazio
+          shopt -s nullglob
+          FOUND=(translate/rec*.ptbr.txt)
+          if [[ ${#FOUND[@]} -gt 0 && ! -f "translate/rec${DETECTED}.ptbr.txt" ]]; then
+            mv "${FOUND[0]}" "translate/rec${DETECTED}.ptbr.txt"
+          fi
+          [[ -f "translate/rec${DETECTED}.ptbr.txt" ]] || : > "translate/rec${DETECTED}.ptbr.txt"
       
           echo "[4/4] Rodando translate com REC=${DETECTED}"
           LANG="${DBI_TARGET}" make translate REC="${DETECTED}"
