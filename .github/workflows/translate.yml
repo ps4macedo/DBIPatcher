@@ -25,6 +25,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       CONFIG_FILE: config.txt
+      REC: 5
     outputs:
       matrix: ${{ steps.prepare-matrix.outputs.matrix }}
       ver: ${{ steps.read-config.outputs.ver }}
@@ -122,7 +123,9 @@ jobs:
           python3 -m pip install zstandard
 
       - name: Build & Patch
-        run: LANG="${DBI_TARGET}" make translate rec=5
+        run: |
+          echo "REC=$REC"
+          LANG="${DBI_TARGET}" make translate
 
       - name: Prepare artifact
         run: |
